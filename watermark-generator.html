@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circular Eagle loopWatermark Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: white;
+        }
+
+        .watermark-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .preview-canvas-container {
+            background-image: 
+                linear-gradient(45deg, #1e293b 25%, transparent 25%), 
+                linear-gradient(-45deg, #1e293b 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #1e293b 75%), 
+                linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+
+    <header class="text-center mb-8">
+        <h1 class="text-3xl font-black tracking-tighter text-blue-400">BEST ENT 📺💙</h1>
+        <p class="text-slate-400">Professional Watermark Assets</p>
+    </header>
+
+    <main class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <!-- Controls -->
+        <div class="watermark-card p-6 rounded-2xl space-y-6">
+            <h2 class="text-xl font-bold border-b border-slate-700 pb-2">Customization</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-1">Brand Name</label>
+                    <input type="text" id="brandName" value="BEST ENT 📺💙" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-1">WhatsApp Number</label>
+                    <input type="text" id="brandNumber" value="+234 805 469 3484" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-1">Color</label>
+                        <input type="color" id="brandColor" value="#60a5fa" class="w-full h-10 bg-slate-800 border border-slate-700 rounded-lg cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-1">Opacity</label>
+                        <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8" class="w-full mt-3">
+                    </div>
+                </div>
+            </div>
+
+            <button id="downloadBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition-all transform active:scale-95 shadow-lg">
+                Download PNG Watermark
+            </button>
+            
+            <button id="copyTextBtn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 rounded-lg text-sm">
+                Copy Contact Info
+            </button>
+        </div>
+
+        <!-- Preview -->
+        <div class="watermark-card p-6 rounded-2xl flex flex-col">
+            <h2 class="text-xl font-bold border-b border-slate-700 pb-2 mb-4">Live Preview</h2>
+            <div class="preview-canvas-container flex-grow rounded-xl overflow-hidden flex items-center justify-center min-h-[300px] border border-slate-700">
+                <canvas id="watermarkCanvas" class="max-w-full h-auto"></canvas>
+            </div>
+            <p class="text-xs text-slate-500 mt-4 text-center">Transparent background (checkerboard is for preview only)</p>
+        </div>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-8 bg-blue-500 text-white px-6 py-3 rounded-full shadow-2xl transform translate-y-24 transition-transform duration-300 pointer-events-none">
+        Copied to clipboard!
+    </div>
+
+    <script>
+        const canvas = document.getElementById('watermarkCanvas');
+        const ctx = canvas.getContext('2d');
+        const brandInput = document.getElementById('brandName');
+        const numberInput = document.getElementById('brandNumber');
+        const colorInput = document.getElementById('brandColor');
+        const opacityInput = document.getElementById('opacity');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const copyBtn = document.getElementById('copyTextBtn');
+        const toast = document.getElementById('toast');
+
+        function drawWatermark() {
+            const name = brandInput.value;
+            const number = numberInput.value;
+            const color = colorInput.value;
+            const opacity = opacityInput.value;
+
+            // Set canvas size
+            canvas.width = 600;
+            canvas.height = 300;
+
+            // Clear canvas (Transparent)
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Set Global Alpha for transparency
+            ctx.globalAlpha = opacity;
+
+            // Draw Main Name
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 54px Inter, sans-serif';
+            ctx.fillText(name, canvas.width / 2, canvas.height / 2 - 10);
+
+            // Draw Number
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '400 24px Inter, sans-serif';
+            ctx.letterSpacing = '2px';
+            ctx.fillText(number, canvas.width / 2, canvas.height / 2 + 40);
+
+            // Decorative lines
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2 - 100, canvas.height / 2 + 60);
+            ctx.lineTo(canvas.width / 2 + 100, canvas.height / 2 + 60);
+            ctx.stroke();
+        }
+
+        function showToast(msg) {
+            toast.innerText = msg;
+            toast.classList.remove('translate-y-24');
+            setTimeout(() => {
+                toast.classList.add('translate-y-24');
+            }, 2000);
+        }
+
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'best-ent-watermark.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast('Downloading Watermark...');
+        });
+
+        copyBtn.addEventListener('click', () => {
+            const text = `${brandInput.value}\nWhatsApp: ${numberInput.value}`;
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            showToast('Contact info copied!');
+        });
+
+        // Listeners for real-time updates
+        [brandInput, numberInput, colorInput, opacityInput].forEach(el => {
+            el.addEventListener('input', drawWatermark);
+        });
+
+        // Initial Draw
+        window.onload = drawWatermark;
+    </script>
+</body>
+</html>
+
