@@ -245,7 +245,7 @@
 
         // --- Core ---
         async function init() {
-            const qrUrl = await generateQR("https://netcard.io");
+            const qrUrl = await generateQR("https://apps.circulareagle.com");
             const qrEl = state.elements.find(e => e.id === 'el-qr');
             if (qrEl) qrEl.href = qrUrl;
             saveHistory();
@@ -479,8 +479,30 @@
             elementsLayer.innerHTML = html;
         }
 
+        // Helper to convert URL to Base64 (Essential for SVG Export to Canvas)
+        async function toBase64(url) {
+            if (!url || url.startsWith('data:')) return url;
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) {
+                console.warn("Failed to convert image to base64:", url);
+                return url;
+            }
+        }
+
         // --- EXPORT LOGIC REPAIRED ---
         document.getElementById('exportBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('exportBtn');
+            const originalText = btn.innerText;
+            btn.innerText = "PREPARING...";
+            btn.disabled = true;
+
             const canvas = document.getElementById('exportCanvas');
             const ctx = canvas.getContext('2d');
             const isH = state.orientation === 'H';
@@ -496,12 +518,21 @@
             state.selectedId = null;
             render();
 
-            // Clone SVG to modify it for export
+            // CLONE and PREPARE SVG for export
+            // Browsers won't draw remote images to canvas from inside an SVG blob.
+            // We must convert all <image> hrefs to Base64 first.
             const svgClone = svg.cloneNode(true);
+            const images = svgClone.querySelectorAll('image');
+            
+            for (let imgEl of images) {
+                const base64 = await toBase64(imgEl.getAttribute('href'));
+                imgEl.setAttribute('href', base64);
+            }
+
             svgClone.setAttribute('width', W);
             svgClone.setAttribute('height', H);
             
-            // Critical: Inline fonts for the browser's image parser
+            // Inline fonts for the browser's image parser
             const style = document.createElement('style');
             style.textContent = `
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=JetBrains+Mono&family=Playfair+Display:wght@700&family=Bebas+Neue&display=swap');
@@ -514,8 +545,6 @@
             const url = URL.createObjectURL(svgBlob);
 
             const img = new Image();
-            img.crossOrigin = "anonymous";
-            
             img.onload = () => {
                 ctx.fillStyle = document.getElementById('col-bg').value;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -530,12 +559,16 @@
                 URL.revokeObjectURL(url);
                 state.selectedId = oldSelected;
                 render();
+                btn.innerText = originalText;
+                btn.disabled = false;
             };
             
             img.onerror = (err) => {
                 console.error("Export failed:", err);
                 state.selectedId = oldSelected;
                 render();
+                btn.innerText = originalText;
+                btn.disabled = false;
             };
 
             img.src = url;
