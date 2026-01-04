@@ -43,6 +43,7 @@
         .draggable {
             cursor: move;
             user-select: none;
+            pointer-events: all;
         }
         
         .draggable:hover {
@@ -64,6 +65,7 @@
         
         #main-svg {
             filter: drop-shadow(0 25px 50px rgba(0,0,0,0.8));
+            touch-action: none;
         }
 
         .history-btn:disabled { opacity: 0.2; cursor: not-allowed; }
@@ -80,7 +82,6 @@
                 <h1 class="font-black text-lg tracking-tighter uppercase">NetCard <span class="text-blue-500">Ultra</span></h1>
             </div>
 
-            <!-- History Controls -->
             <div class="flex items-center gap-2 border-l border-white/10 pl-6">
                 <button id="undoBtn" onclick="undo()" class="history-btn p-2 hover:bg-white/10 rounded transition-colors" title="Undo">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
@@ -178,9 +179,7 @@
         <main class="flex-1 bg-[#020202] relative flex items-center justify-center p-8 overflow-hidden">
             <div id="canvasWrapper" class="relative w-full max-w-[850px] aspect-[1050/600] transition-all">
                 <svg id="main-svg" viewBox="0 0 1050 600" class="w-full h-full rounded shadow-2xl bg-black">
-                    <!-- Dynamic Clips -->
                     <defs id="svg-defs"></defs>
-                    <!-- Background and Grid -->
                     <rect id="canvas-bg" width="100%" height="100%" fill="#0a0a0a" />
                     <g id="elements-layer"></g>
                 </svg>
@@ -212,11 +211,9 @@
 
         // --- History Logic ---
         function saveHistory() {
-            // Delete future history if we are in the middle of undoing
             if (state.historyIndex < state.history.length - 1) {
                 state.history = state.history.slice(0, state.historyIndex + 1);
             }
-            // Save deep clone of current elements
             state.history.push(JSON.stringify(state.elements));
             if (state.history.length > 50) state.history.shift();
             state.historyIndex = state.history.length - 1;
@@ -251,14 +248,13 @@
             const qrUrl = await generateQR("https://netcard.io");
             const qrEl = state.elements.find(e => e.id === 'el-qr');
             if (qrEl) qrEl.href = qrUrl;
-            saveHistory(); // First save
+            saveHistory();
             render();
             setupInteractions();
         }
 
         async function generateQR(data) {
-            const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data)}&color=ffffff&bgcolor=000000`;
-            return url;
+            return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data)}&color=ffffff&bgcolor=000000`;
         }
 
         function setOrient(o) {
@@ -274,6 +270,7 @@
                 wrapper.className = "relative h-full max-h-[850px] aspect-[600/1050]";
                 svg.setAttribute('viewBox', '0 0 600 1050');
             }
+            render(); // Rerender to fix clip paths on orientation change
         }
 
         function updateCanvasStyle() {
@@ -285,8 +282,8 @@
             state.elements.push({
                 id: 'txt-' + Date.now(),
                 type: 'text',
-                text: 'Double click to edit',
-                x: 100, y: 100, fontSize: 30, fill: '#ffffff', fontFamily: 'Inter', fontWeight: '400', opacity: 1
+                text: 'New Text',
+                x: 150, y: 150, fontSize: 30, fill: '#ffffff', fontFamily: 'Inter', fontWeight: '400', opacity: 1
             });
             saveHistory();
             render();
@@ -294,11 +291,10 @@
 
         function addShape(shapeType) {
             const id = 'shape-' + Date.now();
-            const base = { id, fill: '#3b82f6', opacity: 0.5, x: 200, y: 200 };
             if (shapeType === 'rect') {
-                state.elements.push({ ...base, type: 'rect', width: 100, height: 100 });
+                state.elements.push({ id, type: 'rect', fill: '#3b82f6', opacity: 0.8, x: 200, y: 200, width: 100, height: 100 });
             } else {
-                state.elements.push({ ...base, type: 'circle', r: 50, cx: 200, cy: 200 });
+                state.elements.push({ id, type: 'circle', fill: '#3b82f6', opacity: 0.8, cx: 250, cy: 250, r: 50 });
             }
             saveHistory();
             render();
@@ -321,19 +317,35 @@
             }
         }
 
-        // --- Interaction ---
+        // --- Interaction Logic (REPAIRED FOR ALL OBJECTS) ---
+        function getMouseCoords(e) {
+            const CTM = svg.getScreenCTM();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - CTM.e) / CTM.a,
+                y: (clientY - CTM.f) / CTM.d
+            };
+        }
+
         function setupInteractions() {
             svg.addEventListener('mousedown', startDrag);
             window.addEventListener('mousemove', drag);
             window.addEventListener('mouseup', endDrag);
+
+            svg.addEventListener('touchstart', startDrag, {passive: false});
+            window.addEventListener('touchmove', drag, {passive: false});
+            window.addEventListener('touchend', endDrag);
         }
 
         function startDrag(e) {
             const target = e.target.closest('.draggable');
             if (!target) {
-                state.selectedId = null;
-                editor.classList.add('hidden');
-                render();
+                if (e.target.id === 'main-svg' || e.target.id === 'canvas-bg') {
+                   state.selectedId = null;
+                   editor.classList.add('hidden');
+                   render();
+                }
                 return;
             }
 
@@ -343,33 +355,33 @@
             state.isDragging = true;
             state.dragTarget = state.elements.find(el => el.id === id);
             
-            const CTM = svg.getScreenCTM();
-            const mouseX = (e.clientX - CTM.e) / CTM.a;
-            const mouseY = (e.clientY - CTM.f) / CTM.d;
+            const coords = getMouseCoords(e);
 
+            // Handle both coordinate systems: x/y and cx/cy
             if (state.dragTarget.type === 'circle') {
-                state.dragOffset.x = mouseX - state.dragTarget.cx;
-                state.dragOffset.y = mouseY - state.dragTarget.cy;
+                state.dragOffset.x = coords.x - state.dragTarget.cx;
+                state.dragOffset.y = coords.y - state.dragTarget.cy;
             } else {
-                state.dragOffset.x = mouseX - state.dragTarget.x;
-                state.dragOffset.y = mouseY - state.dragTarget.y;
+                state.dragOffset.x = coords.x - state.dragTarget.x;
+                state.dragOffset.y = coords.y - state.dragTarget.y;
             }
+            
+            if (e.cancelable) e.preventDefault();
         }
 
         function drag(e) {
             if (!state.isDragging || !state.dragTarget) return;
-            const CTM = svg.getScreenCTM();
-            const mouseX = (e.clientX - CTM.e) / CTM.a;
-            const mouseY = (e.clientY - CTM.f) / CTM.d;
+            const coords = getMouseCoords(e);
 
             if (state.dragTarget.type === 'circle') {
-                state.dragTarget.cx = mouseX - state.dragOffset.x;
-                state.dragTarget.cy = mouseY - state.dragOffset.y;
+                state.dragTarget.cx = coords.x - state.dragOffset.x;
+                state.dragTarget.cy = coords.y - state.dragOffset.y;
             } else {
-                state.dragTarget.x = mouseX - state.dragOffset.x;
-                state.dragTarget.y = mouseY - state.dragOffset.y;
+                state.dragTarget.x = coords.x - state.dragOffset.x;
+                state.dragTarget.y = coords.y - state.dragOffset.y;
             }
             render();
+            if (e.cancelable) e.preventDefault();
         }
 
         function endDrag() {
@@ -382,7 +394,6 @@
             const el = state.elements.find(e => e.id === id);
             editor.classList.remove('hidden');
             
-            // Sync UI
             document.getElementById('textOnly').style.display = el.type === 'text' ? 'block' : 'none';
             document.getElementById('imageOnly').style.display = el.type === 'image' ? 'block' : 'none';
             
@@ -390,12 +401,10 @@
                 document.getElementById('fontSelect').value = el.fontFamily;
                 document.getElementById('contentInput').value = el.text;
                 document.getElementById('sizeInput').value = el.fontSize;
-            } else if (el.type === 'image') {
+            } else if (el.type === 'image' || el.type === 'rect') {
                 document.getElementById('sizeInput').value = el.width;
             } else if (el.type === 'circle') {
                 document.getElementById('sizeInput').value = el.r;
-            } else if (el.type === 'rect') {
-                document.getElementById('sizeInput').value = el.width;
             }
 
             document.getElementById('colorInput').value = el.fill || '#ffffff';
@@ -408,16 +417,15 @@
             const el = state.elements.find(e => e.id === state.selectedId);
             
             if (prop === 'scale') {
-                if (el.type === 'text') el.fontSize = parseInt(value);
-                else if (el.type === 'image' || el.type === 'rect') { el.width = parseInt(value); el.height = parseInt(value); }
-                else if (el.type === 'circle') el.r = parseInt(value);
+                const val = parseInt(value);
+                if (el.type === 'text') el.fontSize = val;
+                else if (el.type === 'image' || el.type === 'rect') { el.width = val; el.height = val; }
+                else if (el.type === 'circle') el.r = val;
             } else {
                 el[prop] = value;
             }
             
             render();
-            // We save history after a slight debounce or on certain actions
-            // For now, save on every change for simplicity
             clearTimeout(window.saveTimeout);
             window.saveTimeout = setTimeout(saveHistory, 500);
         }
@@ -430,7 +438,7 @@
             render();
         }
 
-        // --- Rendering ---
+        // --- Rendering Engine ---
         function render() {
             let html = '';
             let defs = '';
@@ -483,7 +491,6 @@
             canvas.width = W * 2;
             canvas.height = H * 2;
 
-            // Clear selection for clean export
             const oldSelected = state.selectedId;
             state.selectedId = null;
             render();
