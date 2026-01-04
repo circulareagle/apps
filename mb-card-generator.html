@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetCard Studio v2.0</title>
+    <!-- React and Babel for browser-side JSX transpilation -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        // Simple Icon Component to bridge Lucide for the browser
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const iconRef = useRef(null);
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [name]);
+            return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('design');
+            const [orientation, setOrientation] = useState('horizontal');
+            const [view, setView] = useState('front');
+            const [selectedElement, setSelectedElement] = useState(null);
+            
+            const [palette, setPalette] = useState({
+                primary: '#0f172a',
+                secondary: '#3b82f6',
+                accent: '#f59e0b',
+                text: '#ffffff',
+                bg: '#ffffff'
+            });
+
+            const [cardData, setCardData] = useState({
+                name: 'JONATHAN DOE',
+                title: 'Executive Creative Director',
+                company: 'STRATOS MEDIA',
+                phone: '+1 234 567 890',
+                email: 'hello@stratos.com',
+                web: 'www.stratos.media',
+                address: '99 Tech Plaza, New York',
+                logo: null,
+                qrEnabled: true
+            });
+
+            const cardRef = useRef(null);
+
+            const handleImageUpload = (e, type) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        setCardData(prev => ({ ...prev, [type]: event.target.result }));
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const exportCard = () => {
+                const svg = cardRef.current;
+                const svgData = new XMLSerializer().serializeToString(svg);
+                const canvas = document.createElement("canvas");
+                
+                canvas.width = orientation === 'horizontal' ? 1050 : 600;
+                canvas.height = orientation === 'horizontal' ? 600 : 1050;
+                
+                const ctx = canvas.getContext("2d");
+                const img = new Image();
+                img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+                
+                img.onload = () => {
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const link = document.createElement("a");
+                    link.download = `BusinessCard_${cardData.name.replace(/\s+/g, '_')}_${view}.png`;
+                    link.href = canvas.toDataURL("image/png");
+                    link.click();
+                };
+            };
+
+            const BusinessCard = () => {
+                const isHoriz = orientation === 'horizontal';
+                const width = isHoriz ? 1050 : 600;
+                const height = isHoriz ? 600 : 1050;
+
+                return (
+                    <svg 
+                        ref={cardRef}
+                        viewBox={`0 0 ${width} ${height}`} 
+                        className="w-full h-auto shadow-2xl rounded-sm transition-all duration-300 bg-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <rect width={width} height={height} fill={view === 'front' ? palette.bg : palette.primary} />
+                        
+                        {view === 'front' ? (
+                            <g>
+                                <path d={`M 0 0 L ${width * 0.3} 0 L 0 ${height * 0.4} Z`} fill={palette.secondary} opacity="0.1" />
+                                <rect x={width - 40} y="0" width="40" height={height} fill={palette.primary} />
+                                
+                                {cardData.logo ? (
+                                    <image href={cardData.logo} x="80" y="80" width="120" height="120" preserveAspectRatio="xMidYMid meet" />
+                                ) : (
+                                    <rect x="80" y="80" width="60" height="60" fill={palette.secondary} rx="8" />
+                                )}
+
+                                <text x="80" y={isHoriz ? "280" : "400"} fontFamily="Inter, sans-serif" fontSize="52" fontWeight="900" fill={palette.primary}>{cardData.name}</text>
+                                <text x="80" y={isHoriz ? "330" : "450"} fontFamily="Inter, sans-serif" fontSize="22" fontWeight="500" fill={palette.secondary} letterSpacing="2">{cardData.title.toUpperCase()}</text>
+                                
+                                <line x1="80" y1={isHoriz ? "360" : "480"} x2="250" y2={isHoriz ? "360" : "480"} stroke={palette.accent} strokeWidth="6" />
+
+                                <g transform={`translate(80, ${isHoriz ? 420 : 550})`} fontFamily="Inter, sans-serif" fontSize="18" fill="#475569">
+                                    <text y="0" fontWeight="bold">{cardData.phone}</text>
+                                    <text y="35">{cardData.email}</text>
+                                    <text y="70">{cardData.web}</text>
+                                    <text y="105" opacity="0.6">{cardData.address}</text>
+                                </g>
+
+                                {cardData.qrEnabled && (
+                                    <g transform={`translate(${width - 200}, ${height - 200})`}>
+                                        <rect width="120" height="120" fill="white" rx="10" />
+                                        <rect x="15" y="15" width="90" height="90" fill={palette.primary} opacity="0.1" />
+                                        <path d="M 25 25 L 45 25 L 45 45 L 25 45 Z M 75 25 L 95 25 L 95 45 L 75 45 Z M 25 75 L 45 75 L 45 95 L 25 95 Z" fill={palette.primary} />
+                                        <text x="60" y="135" textAnchor="middle" fontSize="10" fill={palette.primary}>SCAN TO CONNECT</text>
+                                    </g>
+                                )}
+                            </g>
+                        ) : (
+                            <g>
+                                <rect x={width/2 - 2} y={height/2 - 150} width="4" height="300" fill={palette.secondary} opacity="0.5" />
+                                <text x={width/2} y={height/2} textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="64" fontWeight="900" fill="white">{cardData.company}</text>
+                                <text x={width/2} y={height/2 + 60} textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="20" fill="white" opacity="0.6" letterSpacing="4">ESTABLISHED 2024</text>
+                            </g>
+                        )}
+                    </svg>
+                );
+            };
+
+            return (
+                <div className="flex flex-col h-screen bg-slate-900 text-slate-200 overflow-hidden">
+                    <header className="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-6 shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-blue-600 p-2 rounded-lg">
+                                <Icon name="credit-card" className="text-white" />
+                            </div>
+                            <span className="font-bold text-lg tracking-tight">NetCard Studio <span className="text-blue-500 font-normal">v2.0</span></span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 bg-slate-900 p-1 rounded-xl">
+                            <button 
+                                onClick={() => setActiveTab('design')}
+                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'design' ? 'bg-slate-700 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+                            >
+                                Design
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('content')}
+                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'content' ? 'bg-slate-700 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+                            >
+                                Details
+                            </button>
+                        </div>
+
+                        <button 
+                            onClick={exportCard}
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg font-bold flex items-center gap-2 transition-all active:scale-95 text-sm"
+                        >
+                            <Icon name="download" size={16} /> Export
+                        </button>
+                    </header>
+
+                    <div className="flex flex-1 overflow-hidden">
+                        <aside className="w-80 bg-slate-800 border-r border-slate-700 overflow-y-auto p-6 scrollbar-hide">
+                            {activeTab === 'design' ? (
+                                <div className="space-y-8">
+                                    <section>
+                                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Master Layout</h3>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button 
+                                                onClick={() => setOrientation('horizontal')}
+                                                className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${orientation === 'horizontal' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 hover:border-slate-600'}`}
+                                            >
+                                                <div className="w-10 h-6 border-2 border-current rounded-sm"></div>
+                                                <span className="text-xs">Horizontal</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => setOrientation('vertical')}
+                                                className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${orientation === 'vertical' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700 hover:border-slate-600'}`}
+                                            >
+                                                <div className="w-6 h-10 border-2 border-current rounded-sm"></div>
+                                                <span className="text-xs">Vertical</span>
+                                            </button>
+                                        </div>
+                                    </section>
+
+                                    <section>
+                                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <Icon name="palette" size={14} /> Color Palette
+                                        </h3>
+                                        <div className="space-y-4">
+                                            {Object.entries(palette).map(([key, value]) => (
+                                                <div key={key} className="flex items-center justify-between">
+                                                    <span className="text-xs capitalize text-slate-400">{key}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <input 
+                                                            type="color" 
+                                                            value={value} 
+                                                            onChange={(e) => setPalette(p => ({...p, [key]: e.target.value}))}
+                                                            className="w-8 h-8 rounded-md bg-transparent cursor-pointer border-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </section>
+
+                                    <section>
+                                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <Icon name="image" size={14} /> Brand Assets
+                                        </h3>
+                                        <div className="space-y-3">
+                                            <label className="block p-4 border-2 border-dashed border-slate-700 rounded-xl hover:border-blue-500 transition-colors cursor-pointer text-center group">
+                                                <input type="file" className="hidden" onChange={(e) => handleImageUpload(e, 'logo')} accept="image/*" />
+                                                <Icon name="upload" size={20} className="mx-auto mb-2 text-slate-500 group-hover:text-blue-500" />
+                                                <span className="text-xs text-slate-400 font-medium">Upload Company Logo</span>
+                                            </label>
+                                            {cardData.logo && (
+                                                <div className="flex items-center justify-between p-2 bg-slate-900 rounded-lg">
+                                                    <span className="text-xs text-blue-400">Logo attached</span>
+                                                    <button onClick={() => setCardData(c => ({...c, logo: null}))} className="text-slate-500 hover:text-red-400">
+                                                        <Icon name="trash-2" size={14} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </section>
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Identity Details</h3>
+                                    {['name', 'title', 'company', 'phone', 'email', 'web', 'address'].map(field => (
+                                        <div key={field} className="space-y-1">
+                                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">{field}</label>
+                                            <input 
+                                                value={cardData[field]}
+                                                onChange={(e) => setCardData(c => ({...c, [field]: e.target.value}))}
+                                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:border-blue-500 outline-none transition-all"
+                                            />
+                                        </div>
+                                    ))}
+                                    <div className="flex items-center gap-3 p-4 bg-slate-900 rounded-xl border border-slate-700">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={cardData.qrEnabled} 
+                                            onChange={(e) => setCardData(c => ({...c, qrEnabled: e.target.checked}))}
+                                            className="w-4 h-4 rounded text-blue-500 bg-slate-800"
+                                        />
+                                        <span className="text-xs font-medium">Include Networking QR Code</span>
+                                    </div>
+                                </div>
+                            )}
+                        </aside>
+
+                        <main className="flex-1 bg-slate-950 flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-hidden">
+                            <div className="absolute top-8 left-1/2 -translate-x-1/2 flex bg-slate-800 p-1 rounded-xl shadow-2xl border border-slate-700 z-10">
+                                <button 
+                                    onClick={() => setView('front')}
+                                    className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${view === 'front' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-700'}`}
+                                >
+                                    FRONT SIDE
+                                </button>
+                                <button 
+                                    onClick={() => setView('back')}
+                                    className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${view === 'back' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-700'}`}
+                                >
+                                    BACK SIDE
+                                </button>
+                            </div>
+
+                            <div className="w-full max-w-2xl relative group">
+                                <BusinessCard />
+                            </div>
+
+                            <div className="mt-12 flex flex-wrap justify-center items-center gap-8 text-slate-500">
+                                <div className="flex items-center gap-2">
+                                    <Icon name="layout" size={16} />
+                                    <span className="text-xs font-medium tracking-tighter">STANDARD 3.5" x 2"</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Icon name="check-circle" size={16} className="text-emerald-500" />
+                                    <span className="text-xs font-medium tracking-tighter uppercase">Bleed margins active</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Icon name="qr-code" size={16} />
+                                    <span className="text-xs font-medium tracking-tighter uppercase">Smart Connect Enabled</span>
+                                </div>
+                            </div>
+                        </main>
+                    </div>
+                    
+                    <footer className="h-10 bg-slate-900 border-t border-slate-800 flex items-center justify-between px-6 text-[10px] text-slate-500 font-medium uppercase tracking-[0.2em]">
+                        <div className="hidden sm:block">Ready for Production</div>
+                        <div className="flex items-center gap-4">
+                            <span className="text-blue-500">Live Preview</span>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
