@@ -6,7 +6,7 @@
     <title>NetCard Architect Ultra | Professional Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=JetBrains+Mono&family=Playfair+Display:wght@700&family=Bebas+Neue&display=swap" rel="stylesheet">
-    <style>
+    <style id="main-styles">
         html, body {
             width: 100%;
             height: 100vh;
@@ -270,7 +270,7 @@
                 wrapper.className = "relative h-full max-h-[850px] aspect-[600/1050]";
                 svg.setAttribute('viewBox', '0 0 600 1050');
             }
-            render(); // Rerender to fix clip paths on orientation change
+            render(); 
         }
 
         function updateCanvasStyle() {
@@ -317,7 +317,7 @@
             }
         }
 
-        // --- Interaction Logic (REPAIRED FOR ALL OBJECTS) ---
+        // --- Interaction Logic ---
         function getMouseCoords(e) {
             const CTM = svg.getScreenCTM();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -357,13 +357,12 @@
             
             const coords = getMouseCoords(e);
 
-            // Handle both coordinate systems: x/y and cx/cy
             if (state.dragTarget.type === 'circle') {
-                state.dragOffset.x = coords.x - state.dragTarget.cx;
-                state.dragOffset.y = coords.y - state.dragTarget.cy;
+                state.dragOffset.x = coords.x - (state.dragTarget.cx || 0);
+                state.dragOffset.y = coords.y - (state.dragTarget.cy || 0);
             } else {
-                state.dragOffset.x = coords.x - state.dragTarget.x;
-                state.dragOffset.y = coords.y - state.dragTarget.y;
+                state.dragOffset.x = coords.x - (state.dragTarget.x || 0);
+                state.dragOffset.y = coords.y - (state.dragTarget.y || 0);
             }
             
             if (e.cancelable) e.preventDefault();
@@ -480,37 +479,65 @@
             elementsLayer.innerHTML = html;
         }
 
-        // --- Export ---
-        document.getElementById('exportBtn').addEventListener('click', () => {
+        // --- EXPORT LOGIC REPAIRED ---
+        document.getElementById('exportBtn').addEventListener('click', async () => {
             const canvas = document.getElementById('exportCanvas');
             const ctx = canvas.getContext('2d');
             const isH = state.orientation === 'H';
             const W = isH ? 1050 : 600;
             const H = isH ? 600 : 1050;
             
+            // Set High Definition Canvas
             canvas.width = W * 2;
             canvas.height = H * 2;
 
+            // Clear selection for clean export
             const oldSelected = state.selectedId;
             state.selectedId = null;
             render();
 
-            const svgData = new XMLSerializer().serializeToString(svg);
-            const img = new Image();
+            // Clone SVG to modify it for export
+            const svgClone = svg.cloneNode(true);
+            svgClone.setAttribute('width', W);
+            svgClone.setAttribute('height', H);
+            
+            // Critical: Inline fonts for the browser's image parser
+            const style = document.createElement('style');
+            style.textContent = `
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=JetBrains+Mono&family=Playfair+Display:wght@700&family=Bebas+Neue&display=swap');
+                text { font-family: 'Inter', sans-serif; }
+            `;
+            svgClone.prepend(style);
+
+            const svgData = new XMLSerializer().serializeToString(svgClone);
             const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
             const url = URL.createObjectURL(svgBlob);
 
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            
             img.onload = () => {
+                ctx.fillStyle = document.getElementById('col-bg').value;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.scale(2, 2);
                 ctx.drawImage(img, 0, 0);
+                
                 const link = document.createElement('a');
-                link.download = `NETCARD_${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
+                link.download = `NETCARD_${state.orientation}_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png', 1.0);
                 link.click();
+                
                 URL.revokeObjectURL(url);
                 state.selectedId = oldSelected;
                 render();
             };
+            
+            img.onerror = (err) => {
+                console.error("Export failed:", err);
+                state.selectedId = oldSelected;
+                render();
+            };
+
             img.src = url;
         });
 
