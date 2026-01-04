@@ -2,27 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=1280">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NetCard Architect Ultra | Professional Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=JetBrains+Mono&family=Playfair+Display:wght@700&family=Bebas+Neue&display=swap" rel="stylesheet">
     <style>
         html, body {
             width: 100%;
-            min-width: 1280px;
             height: 100vh;
             overflow: hidden;
             background-color: #050505;
-        }
-
-        body {
             font-family: 'Inter', sans-serif;
             color: #f1f5f9;
         }
-
-        .mono { font-family: 'JetBrains Mono', monospace; }
-        .serif { font-family: 'Playfair Display', serif; }
-        .bebas { font-family: 'Bebas Neue', cursive; }
 
         .glass-panel {
             background: rgba(15, 15, 15, 0.9);
@@ -48,145 +40,130 @@
             border-radius: 2px;
         }
 
-        #main-svg {
-            filter: drop-shadow(0 25px 50px rgba(0,0,0,0.8));
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        .draggable {
+            cursor: move;
+            user-select: none;
         }
         
+        .draggable:hover {
+            outline: 2px dashed #3b82f6;
+            outline-offset: 4px;
+        }
+
+        .selected-element {
+            outline: 2px solid #3b82f6 !important;
+            outline-offset: 4px;
+        }
+
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
 
         .btn-active { background-color: #2563eb !important; color: white !important; }
         .btn-inactive { background-color: rgba(255,255,255,0.05); color: #94a3b8; }
+        
+        #main-svg {
+            filter: drop-shadow(0 25px 50px rgba(0,0,0,0.8));
+            background-size: 30px 30px;
+        }
     </style>
 </head>
 <body class="flex flex-col">
 
     <nav class="h-14 bg-black border-b border-white/5 flex items-center justify-between px-6 shrink-0 z-50">
         <div class="flex items-center gap-4">
-            <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center shadow-lg shadow-blue-600/20">
+            <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
             </div>
-            <h1 class="font-black text-lg tracking-tighter uppercase">NetCard <span class="text-blue-500">Ultra</span></h1>
-            <span class="text-[10px] text-gray-600 border border-white/10 px-2 py-0.5 rounded uppercase font-mono">Build 5.6.1</span>
+            <h1 class="font-black text-lg tracking-tighter uppercase">NetCard <span class="text-blue-500">FreeEdit</span></h1>
         </div>
 
         <div class="flex items-center gap-4">
-            <div id="saveStatus" class="text-[10px] font-mono text-blue-400 opacity-0 transition-opacity uppercase">Syncing...</div>
-            <button id="exportBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded font-bold text-xs flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-600/20">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                EXPORT HIGH-RES
+            <button onclick="addTextBox()" class="text-[10px] font-bold border border-white/20 px-3 py-2 rounded hover:bg-white/5 transition-all">
+                + ADD TEXT BOX
+            </button>
+            <button id="exportBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded font-bold text-xs flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20">
+                EXPORT PNG
             </button>
         </div>
     </nav>
 
     <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar -->
         <aside class="w-80 glass-panel overflow-y-auto p-6 shrink-0 custom-scrollbar">
             <div class="space-y-8 pb-12">
                 
                 <section>
-                    <span class="control-label">Geometry & View</span>
-                    <div class="grid grid-cols-2 gap-2 mb-2">
-                        <button onclick="setOrient('H')" id="btn-H" class="p-2 rounded text-[10px] font-bold transition-colors">HORIZONTAL</button>
-                        <button onclick="setOrient('V')" id="btn-V" class="p-2 rounded text-[10px] font-bold transition-colors">VERTICAL</button>
+                    <span class="control-label">Layout Configuration</span>
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <button onclick="setOrient('H')" id="btn-H" class="p-2 rounded text-[10px] font-bold transition-colors btn-active">HORIZONTAL</button>
+                        <button onclick="setOrient('V')" id="btn-V" class="p-2 rounded text-[10px] font-bold transition-colors btn-inactive">VERTICAL</button>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="setView('F')" id="btn-F" class="p-2 rounded text-[10px] font-bold transition-colors">FRONT</button>
-                        <button onclick="setView('B')" id="btn-B" class="p-2 rounded text-[10px] font-bold transition-colors">BACK</button>
+                </section>
+
+                <section id="elementEditor" class="hidden">
+                    <span class="control-label">Element Properties</span>
+                    <div class="bg-white/5 p-4 rounded border border-white/10 space-y-4">
+                        <div>
+                            <label class="text-[9px] text-gray-500 block mb-1">FONT STYLE</label>
+                            <select id="fontSelect" onchange="updateSelectedElement('fontFamily', this.value)" class="w-full bg-black border border-white/10 rounded p-2 text-xs text-white">
+                                <option value="Inter">Modern (Sans)</option>
+                                <option value="'Playfair Display'">Executive (Serif)</option>
+                                <option value="'JetBrains Mono'">Cyber (Mono)</option>
+                                <option value="'Bebas Neue'">Bauhaus (Bold)</option>
+                            </select>
+                        </div>
+                        <div id="textInputContainer">
+                            <label class="text-[9px] text-gray-500 block mb-1">CONTENT</label>
+                            <input type="text" id="contentInput" oninput="updateSelectedElement('text', this.value)" class="w-full bg-black border border-white/10 rounded p-2 text-xs text-white">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-gray-500 block mb-1">SIZE</label>
+                            <input type="range" id="sizeInput" min="8" max="200" oninput="updateSelectedElement('fontSize', this.value)" class="w-full">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-gray-500 block mb-1">COLOR</label>
+                            <input type="color" id="colorInput" oninput="updateSelectedElement('fill', this.value)" class="w-full h-8 bg-transparent">
+                        </div>
+                        <button onclick="deleteSelected()" id="deleteBtn" class="w-full py-2 bg-red-900/20 text-red-500 text-[10px] font-bold rounded hover:bg-red-500 hover:text-white transition-all">DELETE ELEMENT</button>
                     </div>
                 </section>
 
                 <section>
-                    <span class="control-label">Design Engine</span>
-                    <select id="templateSelect" onchange="render()" class="w-full bg-white/5 border border-white/10 rounded p-2.5 text-xs text-white outline-none focus:border-blue-500 cursor-pointer">
-                        <option value="neo">Neo-Modernist</option>
-                        <option value="executive">The Executive (Serif)</option>
-                        <option value="cyber">Cyber-Grid (Mono)</option>
-                        <option value="bauhaus">Bauhaus (Geometric)</option>
-                        <option value="minimal">Zero (Minimalist)</option>
-                    </select>
-                </section>
-
-                <section>
-                    <span class="control-label">Identity Scales</span>
-                    <div class="space-y-3">
-                        <div>
-                            <div class="flex justify-between text-[10px] text-gray-500 mb-1"><span>Name Px</span><span id="v-name" class="text-blue-400 font-mono">64</span></div>
-                            <input type="range" id="size-name" min="20" max="150" value="64" oninput="render()" class="w-full">
+                    <span class="control-label">Global Styles</span>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-gray-400">Background</span>
+                            <input type="color" id="col-bg" value="#0a0a0a" oninput="render()" class="h-6 w-12 bg-transparent">
                         </div>
-                        <div>
-                            <div class="flex justify-between text-[10px] text-gray-500 mb-1"><span>Role Px</span><span id="v-role" class="text-blue-400 font-mono">20</span></div>
-                            <input type="range" id="size-role" min="10" max="60" value="20" oninput="render()" class="w-full">
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-[10px] text-gray-500 mb-1"><span>Metadata Px</span><span id="v-info" class="text-blue-400 font-mono">14</span></div>
-                            <input type="range" id="size-info" min="8" max="40" value="14" oninput="render()" class="w-full">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-gray-400">Card Accent</span>
+                            <input type="color" id="col-prime" value="#3b82f6" oninput="render()" class="h-6 w-12 bg-transparent">
                         </div>
                     </div>
                 </section>
 
                 <section>
-                    <span class="control-label">Identity Nodes</span>
-                    <div class="space-y-2">
-                        <input type="text" id="data-name" oninput="render()" placeholder="Full Name" value="ALEXANDER VANCE" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-blue-500/50">
-                        <input type="text" id="data-role" oninput="render()" placeholder="Professional Role" value="Creative Director" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-blue-500/50">
-                        <input type="text" id="data-company" oninput="render()" placeholder="Company" value="VANCE STUDIOS" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-blue-500/50">
-                        <input type="text" id="data-email" oninput="render()" placeholder="Email" value="hello@vance.com" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-blue-500/50">
-                        <input type="text" id="data-social" oninput="render()" placeholder="Social Handle" value="@vance_codes" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-blue-500/50">
-                        <input type="text" id="data-qr" oninput="render()" placeholder="QR Link" value="https://vance.com" class="w-full bg-white/5 border border-white/10 rounded p-2 text-[10px] text-blue-400 font-mono outline-none focus:border-blue-500/50">
-                    </div>
-                </section>
-
-                <section>
-                    <span class="control-label">Color Chroma</span>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div class="relative">
-                            <input type="color" id="col-bg" value="#0a0a0a" oninput="render()" class="w-full h-10 bg-transparent cursor-pointer rounded overflow-hidden">
-                            <span class="absolute -bottom-4 left-0 text-[8px] text-gray-600 uppercase font-bold">Base</span>
-                        </div>
-                        <div class="relative">
-                            <input type="color" id="col-prime" value="#3b82f6" oninput="render()" class="w-full h-10 bg-transparent cursor-pointer rounded overflow-hidden">
-                            <span class="absolute -bottom-4 left-0 text-[8px] text-gray-600 uppercase font-bold">Accent</span>
-                        </div>
-                        <div class="relative">
-                            <input type="color" id="col-text" value="#ffffff" oninput="render()" class="w-full h-10 bg-transparent cursor-pointer rounded overflow-hidden">
-                            <span class="absolute -bottom-4 left-0 text-[8px] text-gray-600 uppercase font-bold">Inks</span>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="border-t border-white/5 pt-6">
-                    <span class="control-label">Global Assets</span>
-                    <div class="flex gap-2 mb-4">
-                        <label class="flex-1 bg-white/5 border-2 border-dashed border-white/10 rounded p-3 text-center cursor-pointer hover:border-blue-500/50 transition-all">
-                            <span class="text-[9px] font-bold text-gray-500">PUSH IDENTITY ASSET</span>
-                            <input type="file" id="assetInput" onchange="handleFile(this)" class="hidden" accept="image/*">
-                        </label>
-                        <button onclick="clearAsset()" class="bg-red-900/10 text-red-500 px-3 rounded hover:bg-red-500 hover:text-white transition-all">×</button>
-                    </div>
-
-                    <div id="assetControls" class="space-y-4 opacity-40 pointer-events-none transition-opacity">
-                        <div>
-                            <div class="flex justify-between text-[10px] text-gray-500 mb-1"><span>Asset Scale</span><span id="v-asset-scale" class="text-blue-400 font-mono">100%</span></div>
-                            <input type="range" id="assetScale" min="10" max="300" value="100" oninput="render()" class="w-full">
-                        </div>
-                        <div>
-                            <span class="text-[9px] font-bold text-gray-600 uppercase mb-2 block">Asset Fitting</span>
-                            <div class="grid grid-cols-3 gap-1">
-                                <button onclick="setFit('slice')" id="fit-slice" class="bg-white/5 text-[8px] py-1.5 rounded font-bold hover:bg-white/10">COVER</button>
-                                <button onclick="setFit('meet')" id="fit-meet" class="bg-white/5 text-[8px] py-1.5 rounded font-bold hover:bg-white/10">CONTAIN</button>
-                                <button onclick="setFit('none')" id="fit-none" class="bg-white/5 text-[8px] py-1.5 rounded font-bold hover:bg-white/10">FILL</button>
-                            </div>
-                        </div>
-                    </div>
+                    <span class="control-label">Identity Assets</span>
+                    <label class="block w-full bg-white/5 border-2 border-dashed border-white/10 rounded p-4 text-center cursor-pointer hover:border-blue-500/50 transition-all">
+                        <span class="text-[9px] font-bold text-gray-500">UPLOAD LOGO/IMAGE</span>
+                        <input type="file" id="assetInput" onchange="handleFile(this)" class="hidden" accept="image/*">
+                    </label>
                 </section>
             </div>
         </aside>
 
+        <!-- Canvas Area -->
         <main class="flex-1 bg-[#020202] relative flex items-center justify-center p-8 overflow-hidden">
-            <div id="canvasWrapper" class="w-full max-w-[850px] aspect-[1050/600] transition-all duration-500 ease-in-out">
-                <svg id="main-svg" viewBox="0 0 1050 600" class="w-full h-full rounded shadow-2xl"></svg>
+            <div id="canvasWrapper" class="relative w-full max-w-[850px] aspect-[1050/600] transition-all">
+                <svg id="main-svg" viewBox="0 0 1050 600" class="w-full h-full rounded shadow-2xl bg-black">
+                    <!-- Dynamic Content -->
+                </svg>
+            </div>
+            
+            <!-- Context Info -->
+            <div class="absolute bottom-6 right-6 text-[10px] text-gray-600 font-mono pointer-events-none">
+                CLICK TO SELECT • DRAG TO MOVE • USE SIDEBAR TO STYLE
             </div>
         </main>
     </div>
@@ -194,335 +171,300 @@
     <canvas id="exportCanvas" class="hidden"></canvas>
 
     <script>
-        let state = {
+        // --- State Management ---
+        const state = {
             orientation: 'H',
-            view: 'F',
-            asset: null,
-            assetFit: 'slice', // slice (cover), meet (contain), none (stretch/fill)
-            isRendering: false,
-            qrCache: { data: '', result: '' }
+            bg: '#0a0a0a',
+            prime: '#3b82f6',
+            elements: [
+                { id: 'el-name', type: 'text', text: 'ALEXANDER VANCE', x: 80, y: 400, fontSize: 64, fill: '#ffffff', fontFamily: 'Inter', fontWeight: '900' },
+                { id: 'el-role', type: 'text', text: 'CREATIVE DIRECTOR', x: 80, y: 450, fontSize: 20, fill: '#3b82f6', fontFamily: 'Inter', fontWeight: '700' },
+                { id: 'el-qr', type: 'image', href: '', x: 850, y: 400, width: 120, height: 120 },
+                { id: 'el-circle', type: 'circle', cx: 800, cy: 150, r: 100, fill: '#3b82f6', opacity: 0.1 }
+            ],
+            selectedId: null,
+            isDragging: false,
+            dragTarget: null,
+            dragOffset: { x: 0, y: 0 }
         };
+
+        const svg = document.getElementById('main-svg');
+        const elementEditor = document.getElementById('elementEditor');
+
+        // --- Core Functions ---
+
+        async function init() {
+            const qrUrl = await generateQR("https://google.com");
+            const qrEl = state.elements.find(e => e.id === 'el-qr');
+            if (qrEl) qrEl.href = qrUrl;
+            render();
+            setupInteractions();
+        }
 
         function setOrient(o) {
             state.orientation = o;
             const wrapper = document.getElementById('canvasWrapper');
-            const svg = document.getElementById('main-svg');
-            
-            document.getElementById('btn-H').className = o === 'H' ? 'btn-active' : 'btn-inactive';
-            document.getElementById('btn-V').className = o === 'V' ? 'btn-active' : 'btn-inactive';
+            document.getElementById('btn-H').className = o === 'H' ? 'p-2 rounded text-[10px] font-bold transition-colors btn-active' : 'p-2 rounded text-[10px] font-bold transition-colors btn-inactive';
+            document.getElementById('btn-V').className = o === 'V' ? 'p-2 rounded text-[10px] font-bold transition-colors btn-active' : 'p-2 rounded text-[10px] font-bold transition-colors btn-inactive';
 
             if(o === 'H') {
-                wrapper.className = "w-full max-w-[850px] aspect-[1050/600]";
+                wrapper.className = "relative w-full max-w-[850px] aspect-[1050/600]";
                 svg.setAttribute('viewBox', '0 0 1050 600');
             } else {
-                wrapper.className = "h-full max-h-[850px] aspect-[600/1050]";
+                wrapper.className = "relative h-full max-h-[850px] aspect-[600/1050]";
                 svg.setAttribute('viewBox', '0 0 600 1050');
             }
             render();
         }
 
-        function setView(v) {
-            state.view = v;
-            document.getElementById('btn-F').className = v === 'F' ? 'btn-active' : 'btn-inactive';
-            document.getElementById('btn-B').className = v === 'B' ? 'btn-active' : 'btn-inactive';
-            render();
+        async function generateQR(data) {
+            const color = state.prime.replace('#', '');
+            const bg = state.bg.replace('#', '');
+            const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data)}&color=${color}&bgcolor=${bg}`;
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                return new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            } catch { return url; }
         }
 
-        function setFit(f) {
-            state.assetFit = f;
-            render();
-        }
-
-        async function handleFile(input) {
+        function handleFile(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = e => {
-                    state.asset = e.target.result;
-                    document.getElementById('assetControls').className = "space-y-4 opacity-100 pointer-events-auto transition-opacity";
+                    const newAsset = {
+                        id: 'asset-' + Date.now(),
+                        type: 'image',
+                        href: e.target.result,
+                        x: 100,
+                        y: 100,
+                        width: 200,
+                        height: 200
+                    };
+                    state.elements.push(newAsset);
                     render();
                 };
                 reader.readAsDataURL(input.files[0]);
             }
         }
 
-        function clearAsset() {
-            state.asset = null;
-            document.getElementById('assetControls').className = "space-y-4 opacity-40 pointer-events-none transition-opacity";
+        function addTextBox() {
+            const newText = {
+                id: 'text-' + Date.now(),
+                type: 'text',
+                text: 'New Text Box',
+                x: 300,
+                y: 300,
+                fontSize: 24,
+                fill: '#ffffff',
+                fontFamily: 'Inter',
+                fontWeight: '400'
+            };
+            state.elements.push(newText);
+            selectElement(newText.id);
             render();
         }
 
-        async function getQrAsDataUrl() {
-            const qrData = document.getElementById('data-qr').value || "https://google.com";
-            const prime = document.getElementById('col-prime').value.replace('#', '');
-            const bg = document.getElementById('col-bg').value.replace('#', '');
-            
-            if(state.qrCache.data === (qrData + prime + bg)) return state.qrCache.result;
+        // --- Interaction Logic ---
 
-            const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&color=${prime}&bgcolor=${bg}`;
+        function setupInteractions() {
+            svg.addEventListener('mousedown', startDrag);
+            window.addEventListener('mousemove', drag);
+            window.addEventListener('mouseup', endDrag);
+
+            // Touch support
+            svg.addEventListener('touchstart', (e) => startDrag(e.touches[0]));
+            window.addEventListener('touchmove', (e) => drag(e.touches[0]));
+            window.addEventListener('touchend', endDrag);
+        }
+
+        function getSVGCoords(e) {
+            const CTM = svg.getScreenCTM();
+            return {
+                x: (e.clientX - CTM.e) / CTM.a,
+                y: (e.clientY - CTM.f) / CTM.d
+            };
+        }
+
+        function startDrag(e) {
+            const target = e.target.closest('.draggable');
+            if (!target) {
+                state.selectedId = null;
+                elementEditor.classList.add('hidden');
+                render();
+                return;
+            }
+
+            const id = target.getAttribute('data-id');
+            selectElement(id);
+
+            state.isDragging = true;
+            state.dragTarget = state.elements.find(el => el.id === id);
             
-            try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                const result = await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.readAsDataURL(blob);
-                });
-                state.qrCache = { data: qrData + prime + bg, result: result };
-                return result;
-            } catch (e) {
-                return url; 
+            const coords = getSVGCoords(e);
+            if (state.dragTarget.type === 'circle') {
+                state.dragOffset.x = coords.x - state.dragTarget.cx;
+                state.dragOffset.y = coords.y - state.dragTarget.cy;
+            } else {
+                state.dragOffset.x = coords.x - state.dragTarget.x;
+                state.dragOffset.y = coords.y - state.dragTarget.y;
             }
         }
 
-        async function render() {
-            if (state.isRendering) return;
-            state.isRendering = true;
+        function drag(e) {
+            if (!state.isDragging || !state.dragTarget) return;
+            const coords = getSVGCoords(e);
 
-            const svg = document.getElementById('main-svg');
-            const W = state.orientation === 'H' ? 1050 : 600;
-            const H = state.orientation === 'H' ? 600 : 1050;
-            const isH = state.orientation === 'H';
+            if (state.dragTarget.type === 'circle') {
+                state.dragTarget.cx = coords.x - state.dragOffset.x;
+                state.dragTarget.cy = coords.y - state.dragOffset.y;
+            } else {
+                state.dragTarget.x = coords.x - state.dragOffset.x;
+                state.dragTarget.y = coords.y - state.dragOffset.y;
+            }
+            render();
+        }
+
+        function endDrag() {
+            state.isDragging = false;
+        }
+
+        function selectElement(id) {
+            state.selectedId = id;
+            const el = state.elements.find(e => e.id === id);
             
-            const template = document.getElementById('templateSelect').value;
+            elementEditor.classList.remove('hidden');
+            document.getElementById('fontSelect').value = el.fontFamily || 'Inter';
+            document.getElementById('sizeInput').value = el.fontSize || el.width || el.r || 50;
+            document.getElementById('colorInput').value = el.fill || '#ffffff';
+            
+            const textContainer = document.getElementById('textInputContainer');
+            if (el.type === 'text') {
+                textContainer.classList.remove('hidden');
+                document.getElementById('contentInput').value = el.text;
+            } else {
+                textContainer.classList.add('hidden');
+            }
+            render();
+        }
+
+        function updateSelectedElement(prop, value) {
+            if (!state.selectedId) return;
+            const el = state.elements.find(e => e.id === state.selectedId);
+            
+            if (prop === 'fontSize') {
+                if (el.type === 'text') el.fontSize = parseInt(value);
+                if (el.type === 'image') { el.width = parseInt(value); el.height = parseInt(value); }
+                if (el.type === 'circle') el.r = parseInt(value);
+            } else {
+                el[prop] = value;
+            }
+            render();
+        }
+
+        function deleteSelected() {
+            if (!state.selectedId) return;
+            state.elements = state.elements.filter(e => e.id !== state.selectedId);
+            state.selectedId = null;
+            elementEditor.classList.add('hidden');
+            render();
+        }
+
+        // --- Rendering Engine ---
+
+        function render() {
             const bg = document.getElementById('col-bg').value;
             const prime = document.getElementById('col-prime').value;
-            const txt = document.getElementById('col-text').value;
-
-            const name = document.getElementById('data-name').value || "NAME";
-            const role = document.getElementById('data-role').value || "ROLE";
-            const company = document.getElementById('data-company').value || "COMPANY";
-            const email = document.getElementById('data-email').value;
-            const social = document.getElementById('data-social').value;
-
-            const szName = document.getElementById('size-name').value;
-            const szRole = document.getElementById('size-role').value;
-            const szInfo = document.getElementById('size-info').value;
-            
-            // Asset Specific Transforms
-            const assetScale = document.getElementById('assetScale').value / 100;
-            document.getElementById('v-asset-scale').innerText = `${Math.round(assetScale*100)}%`;
-            document.getElementById('v-name').innerText = szName;
-            document.getElementById('v-role').innerText = szRole;
-            document.getElementById('v-info').innerText = szInfo;
-
-            // Update Fit Buttons
-            ['slice', 'meet', 'none'].forEach(f => {
-                const btn = document.getElementById(`fit-${f}`);
-                if(btn) btn.className = state.assetFit === f ? 'bg-blue-600 text-[8px] py-1.5 rounded font-bold text-white' : 'bg-white/5 text-[8px] py-1.5 rounded font-bold hover:bg-white/10';
-            });
-
-            const qrDataUrl = await getQrAsDataUrl();
+            state.bg = bg;
+            state.prime = prime;
 
             let html = `
                 <defs>
                     <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                        <path d="M 30 0 L 0 0 0 30" fill="none" stroke="${prime}" stroke-width="0.3" opacity="0.3" />
+                        <path d="M 30 0 L 0 0 0 30" fill="none" stroke="${prime}" stroke-width="0.3" opacity="0.2" />
                     </pattern>
-                    <clipPath id="circleClipNeo"><circle cx="80" cy="80" r="80" /></clipPath>
-                    <clipPath id="circleClipNeoV"><circle cx="${W/2}" cy="80" r="80" /></clipPath>
-                    <clipPath id="circleClipBauhaus"><circle cx="${isH ? W*0.8 : W/2}" cy="${isH ? H/2 : H*0.2}" r="${isH ? 200 : 150}" /></clipPath>
-                    <clipPath id="circleClipExecutive"><circle cx="${W/2}" cy="${H-100}" r="40" /></clipPath>
-                    <clipPath id="circleClipMinimal"><circle cx="${isH ? W-100 : W/2}" cy="${isH ? H-100 : H-130}" r="40" /></clipPath>
                 </defs>
-                <rect width="${W}" height="${H}" fill="${bg}" />
-                <rect width="${W}" height="${H}" fill="url(#grid)" />
+                <rect width="100%" height="100%" fill="${bg}" />
+                <rect width="100%" height="100%" fill="url(#grid)" />
             `;
 
-            if (state.view === 'F') {
-                // Utility to build the asset string with dynamic size and fit
-                const getAssetImage = (x, y, baseW, baseH, clipId) => {
-                    if (!state.asset) return '';
-                    const finalW = baseW * assetScale;
-                    const finalH = baseH * assetScale;
-                    const offX = x + (baseW - finalW)/2;
-                    const offY = y + (baseH - finalH)/2;
-                    const fitAttr = state.assetFit === 'none' ? 'preserveAspectRatio="none"' : `preserveAspectRatio="xMidYMid ${state.assetFit}"`;
-                    
-                    return `<image href="${state.asset}" x="${offX}" y="${offY}" width="${finalW}" height="${finalH}" ${clipId ? `clip-path="url(#${clipId})"` : ''} ${fitAttr} />`;
-                };
-
-                switch(template) {
-                    case 'executive':
-                        const fontSerif = "'Playfair Display', serif";
-                        html += `<rect x="40" y="40" width="${W-80}" height="${H-80}" fill="none" stroke="${prime}" stroke-width="1.5" />`;
-                        if (isH) {
-                            html += `
-                                <g transform="translate(${W/2}, ${H/2-30})">
-                                    <text text-anchor="middle" font-family="${fontSerif}" font-size="${szName}" fill="${txt}">${name}</text>
-                                    <text y="${parseInt(szName/2) + 20}" text-anchor="middle" font-family="Inter" font-size="${szRole}" letter-spacing="12" font-weight="300" fill="${prime}">${role.toUpperCase()}</text>
-                                </g>
-                                ${state.asset ? getAssetImage(W/2-40, H-130, 80, 80, 'circleClipExecutive') : `<image href="${qrDataUrl}" x="${W/2-40}" y="${H-140}" width="80" height="80" />`}
-                            `;
-                        } else {
-                            html += `
-                                <g transform="translate(${W/2}, ${H/3})">
-                                    <text text-anchor="middle" font-family="${fontSerif}" font-size="${szName}" fill="${txt}">${name}</text>
-                                    <text y="${parseInt(szName/2) + 20}" text-anchor="middle" font-family="Inter" font-size="${szRole}" letter-spacing="6" font-weight="300" fill="${prime}">${role.toUpperCase()}</text>
-                                </g>
-                                <image href="${qrDataUrl}" x="${W/2-60}" y="${H-220}" width="120" height="120" />
-                            `;
-                        }
-                        break;
-
-                    case 'cyber':
-                        const fontMono = "'JetBrains Mono', monospace";
-                        html += `<path d="M 0 0 L ${W*0.4} 0 L ${W*0.35} 40 L 0 40 Z" fill="${prime}" />`;
-                        html += `<text x="15" y="26" font-family="${fontMono}" font-size="12" fill="${bg}" font-weight="900">NODE_VERIFIED // ${Date.now().toString().slice(-6)}</text>`;
-                        if (isH) {
-                            html += `
-                                <g transform="translate(60, ${H/2})">
-                                    <text font-family="${fontMono}" font-size="${szName}" font-weight="900" fill="${txt}" style="text-transform:uppercase">${name}</text>
-                                    <text y="${szName*0.8}" font-family="${fontMono}" font-size="${szRole}" fill="${prime}">${role}</text>
-                                </g>
-                                <image href="${qrDataUrl}" x="${W-160}" y="${H-160}" width="120" height="120" />
-                            `;
-                        } else {
-                            html += `
-                                <g transform="translate(40, ${H*0.4})">
-                                    <text font-family="${fontMono}" font-size="${szName}" font-weight="900" fill="${txt}" style="text-transform:uppercase">${name}</text>
-                                    <text y="${szName*0.8}" font-family="${fontMono}" font-size="${szRole}" fill="${prime}">${role}</text>
-                                </g>
-                                <image href="${qrDataUrl}" x="${W-180}" y="${H-180}" width="140" height="140" />
-                            `;
-                        }
-                        break;
-
-                    case 'bauhaus':
-                        const bauRadius = isH ? 200 : 150;
-                        const bauX = isH ? W*0.8 : W/2;
-                        const bauY = isH ? H/2 : H*0.2;
-                        html += `<circle cx="${bauX}" cy="${bauY}" r="${bauRadius}" fill="${prime}" opacity="0.15" />`;
-                        if(state.asset) {
-                            html += getAssetImage(bauX - bauRadius, bauY - bauRadius, bauRadius*2, bauRadius*2, 'circleClipBauhaus');
-                        }
-                        html += `<rect x="0" y="${H-60}" width="${W}" height="60" fill="${prime}" />`;
-                        const fontBebas = "'Bebas Neue', cursive";
-                        if (isH) {
-                            html += `
-                                <g transform="translate(60, ${H/2+40})">
-                                    <text font-family="${fontBebas}" font-size="${szName}" fill="${txt}">${name}</text>
-                                    <text y="40" font-family="Inter" font-size="${szRole}" font-weight="900" fill="${prime}">${role}</text>
-                                </g>
-                                <image href="${qrDataUrl}" x="${W-180}" y="60" width="120" height="120" />
-                            `;
-                        } else {
-                            html += `
-                                <g transform="translate(${W/2}, ${H/2})">
-                                    <text text-anchor="middle" font-family="${fontBebas}" font-size="${szName}" fill="${txt}">${name}</text>
-                                    <text y="50" text-anchor="middle" font-family="Inter" font-size="${szRole}" font-weight="900" fill="${prime}">${role}</text>
-                                </g>
-                                <image href="${qrDataUrl}" x="${W/2-60}" y="${H-250}" width="120" height="120" />
-                            `;
-                        }
-                        break;
-
-                    case 'minimal':
-                         html += `<line x1="60" y1="${H/2}" x2="${W-60}" y2="${H/2}" stroke="${prime}" stroke-width="0.5" />`;
-                         if (isH) {
-                            html += `
-                                <text x="60" y="${H/2 - 20}" font-family="Inter" font-size="${szName}" font-weight="900" fill="${txt}">${name}</text>
-                                <text x="60" y="${H/2 + 40}" font-family="Inter" font-size="${szRole}" fill="${prime}">${role}</text>
-                                ${state.asset ? getAssetImage(W-140, H-140, 80, 80, 'circleClipMinimal') : `<image href="${qrDataUrl}" x="${W-140}" y="${H-140}" width="80" height="80" />`}
-                            `;
-                         } else {
-                            html += `
-                                <text x="40" y="${H/2 - 20}" font-family="Inter" font-size="${szName}" font-weight="900" fill="${txt}">${name}</text>
-                                <text x="40" y="${H/2 + 40}" font-family="Inter" font-size="${szRole}" fill="${prime}">${role}</text>
-                                ${state.asset ? getAssetImage(W/2-50, H-180, 100, 100, 'circleClipMinimal') : `<image href="${qrDataUrl}" x="${W/2-50}" y="${H-180}" width="100" height="100" />`}
-                            `;
-                         }
-                         break;
-
-                    default: // Neo-Modernist
-                        html += `<rect x="${W-15}" y="0" width="15" height="${H}" fill="${prime}" />`;
-                        if (isH) {
-                            html += `
-                                <path d="M ${W*0.6} 0 L ${W} 0 L ${W} ${H} L ${W*0.4} ${H} Z" fill="${prime}" opacity="0.05" />
-                                ${state.asset ? getAssetImage(80, 80, 160, 160, 'circleClipNeo') : ''}
-                                <g transform="translate(80, ${H-180})">
-                                    <text font-family="Inter" font-size="${szName}" font-weight="900" fill="${txt}">${name}</text>
-                                    <text y="45" font-family="Inter" font-size="${szRole}" font-weight="700" fill="${prime}">${role.toUpperCase()}</text>
-                                    <g transform="translate(0, 90)" font-family="'JetBrains Mono'" font-size="${szInfo}" fill="${txt}" opacity="0.6">
-                                        <text y="0">${email}</text>
-                                        <text y="22">${social}</text>
-                                    </g>
-                                </g>
-                                <image href="${qrDataUrl}" x="${W-160}" y="${H-160}" width="120" height="120" />
-                            `;
-                        } else {
-                            html += `
-                                <path d="M 0 ${H*0.7} L ${W} ${H*0.5} L ${W} ${H} L 0 ${H} Z" fill="${prime}" opacity="0.05" />
-                                ${state.asset ? getAssetImage(W/2-80, 80, 160, 160, 'circleClipNeoV') : ''}
-                                <g transform="translate(${W/2}, ${H/2+40})">
-                                    <text text-anchor="middle" font-family="Inter" font-size="${szName}" font-weight="900" fill="${txt}">${name}</text>
-                                    <text y="50" text-anchor="middle" font-family="Inter" font-size="${szRole}" font-weight="700" fill="${prime}">${role.toUpperCase()}</text>
-                                    <g transform="translate(0, 100)" text-anchor="middle" font-family="'JetBrains Mono'" font-size="${szInfo}" fill="${txt}" opacity="0.6">
-                                        <text y="0">${email}</text>
-                                        <text y="30">${social}</text>
-                                    </g>
-                                </g>
-                                <image href="${qrDataUrl}" x="${W/2-60}" y="${H-180}" width="120" height="120" />
-                            `;
-                        }
+            state.elements.forEach(el => {
+                const isSelected = el.id === state.selectedId;
+                const classes = `draggable ${isSelected ? 'selected-element' : ''}`;
+                
+                if (el.type === 'text') {
+                    html += `<text 
+                        data-id="${el.id}"
+                        x="${el.x}" y="${el.y}" 
+                        fill="${el.fill}" 
+                        font-family="${el.fontFamily}" 
+                        font-size="${el.fontSize}" 
+                        font-weight="${el.fontWeight}" 
+                        class="${classes}">${el.text}</text>`;
+                } else if (el.type === 'image') {
+                    html += `<image 
+                        data-id="${el.id}"
+                        href="${el.href}" 
+                        x="${el.x}" y="${el.y}" 
+                        width="${el.width}" height="${el.height}" 
+                        class="${classes}" />`;
+                } else if (el.type === 'circle') {
+                    html += `<circle 
+                        data-id="${el.id}"
+                        cx="${el.cx}" cy="${el.cy}" r="${el.r}" 
+                        fill="${el.fill}" opacity="${el.opacity}" 
+                        class="${classes}" />`;
                 }
-            } else {
-                html += `
-                    <g transform="translate(${W/2}, ${H/2})">
-                        <circle r="${isH ? 180 : 140}" fill="${prime}" opacity="0.03" stroke="${prime}" stroke-width="0.5" />
-                        <text text-anchor="middle" font-family="Inter" font-size="${szName}" font-weight="900" fill="${txt}" style="letter-spacing:4px">${company}</text>
-                        <text y="50" text-anchor="middle" font-family="'JetBrains Mono'" font-size="12" letter-spacing="8" fill="${prime}">WWW.NETCARD-STUDIO.IO</text>
-                    </g>
-                    <rect x="${W/2-20}" y="${H-40}" width="40" height="2" fill="${prime}" />
-                `;
-            }
+            });
 
             svg.innerHTML = html;
-            state.isRendering = false;
-            
-            const status = document.getElementById('saveStatus');
-            status.style.opacity = "1";
-            setTimeout(() => status.style.opacity = "0", 800);
         }
 
+        // --- Export ---
+
         document.getElementById('exportBtn').addEventListener('click', async () => {
-            const svg = document.getElementById('main-svg');
             const canvas = document.getElementById('exportCanvas');
             const ctx = canvas.getContext('2d');
-            
             const isH = state.orientation === 'H';
             const baseW = isH ? 1050 : 600;
             const baseH = isH ? 600 : 1050;
-            const scale = 4; 
+            const scale = 2; 
 
             canvas.width = baseW * scale;
             canvas.height = baseH * scale;
 
+            // Deselect before export
+            const currentSelected = state.selectedId;
+            state.selectedId = null;
+            render();
+
             const serializer = new XMLSerializer();
-            let svgStr = serializer.serializeToString(svg);
-            
+            const svgStr = serializer.serializeToString(svg);
             const img = new Image();
             const svgBlob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
             const url = URL.createObjectURL(svgBlob);
 
             img.onload = () => {
-                ctx.fillStyle = document.getElementById('col-bg').value;
+                ctx.fillStyle = state.bg;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
                 const link = document.createElement('a');
-                link.download = `NETCARD_ARCHITECT_${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png', 1.0);
+                link.download = `NETCARD_DESIGN_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
                 link.click();
                 URL.revokeObjectURL(url);
+                // Restore selection
+                state.selectedId = currentSelected;
+                render();
             };
             img.src = url;
         });
 
-        window.onload = () => {
-            setOrient('H');
-            setView('F');
-        };
+        init();
     </script>
 </body>
 </html>
