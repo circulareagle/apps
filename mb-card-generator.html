@@ -2,16 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Forcing desktop-scale viewport by setting a fixed width -->
+    <meta name="viewport" content="width=1280">
     <title>NetCard Architect Ultra | Professional Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=JetBrains+Mono&family=Playfair+Display:wght@700&family=Bebas+Neue&display=swap" rel="stylesheet">
     <style>
+        /* Force desktop layout constraints */
+        html, body {
+            width: 100%;
+            min-width: 1280px;
+            height: 100vh;
+            overflow-x: auto;
+            background-color: #050505;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #050505;
             color: #f1f5f9;
         }
+
         .mono { font-family: 'JetBrains Mono', monospace; }
         .serif { font-family: 'Playfair Display', serif; }
         .bebas { font-family: 'Bebas Neue', cursive; }
@@ -44,7 +54,7 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
+<body class="flex flex-col overflow-hidden">
 
     <nav class="h-14 bg-black border-b border-white/5 flex items-center justify-between px-6 shrink-0 z-50">
         <div class="flex items-center gap-4">
@@ -235,14 +245,12 @@
             const prime = document.getElementById('col-prime').value;
             const txt = document.getElementById('col-text').value;
 
-            // Identity
             const name = document.getElementById('data-name').value || "NAME";
             const role = document.getElementById('data-role').value || "ROLE";
             const company = document.getElementById('data-company').value || "COMPANY";
             const email = document.getElementById('data-email').value;
             const social = document.getElementById('data-social').value;
 
-            // Sizes
             const szName = document.getElementById('size-name').value;
             const szRole = document.getElementById('size-role').value;
             const szInfo = document.getElementById('size-info').value;
@@ -251,7 +259,6 @@
             document.getElementById('v-role').innerText = szRole;
             document.getElementById('v-info').innerText = szInfo;
 
-            // Ensure QR is pre-converted to base64 for export reliability
             const qrDataUrl = await getQrAsDataUrl();
 
             let html = `
@@ -260,7 +267,6 @@
                         <path d="M 30 0 L 0 0 0 30" fill="none" stroke="${prime}" stroke-width="0.3" opacity="0.3" />
                     </pattern>
                     <clipPath id="circleClip"><circle cx="100" cy="100" r="100" /></clipPath>
-                    <clipPath id="sqClip"><rect x="0" y="0" width="200" height="200" /></clipPath>
                 </defs>
                 <rect width="${W}" height="${H}" fill="${bg}" />
                 <rect width="${W}" height="${H}" fill="url(#grid)" />
@@ -386,7 +392,6 @@
                         }
                 }
             } else {
-                // Back Side Layout
                 html += `
                     <g transform="translate(${W/2}, ${H/2})">
                         <circle r="${isH ? 180 : 140}" fill="${prime}" opacity="0.03" stroke="${prime}" stroke-width="0.5" />
@@ -418,7 +423,6 @@
             canvas.width = baseW * scale;
             canvas.height = baseH * scale;
 
-            // Use XMLSerializer but ensure all images are data URLs (handled in render)
             const serializer = new XMLSerializer();
             let svgStr = serializer.serializeToString(svg);
             
