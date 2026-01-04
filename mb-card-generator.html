@@ -2,172 +2,150 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=1280, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NetCard Architect Ultra | Professional Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=JetBrains+Mono&family=Playfair+Display:wght@700&family=Bebas+Neue&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #020202;
+            background-color: #050505;
             color: #f1f5f9;
-            min-width: 1280px;
-            overflow-x: auto;
         }
         .mono { font-family: 'JetBrains Mono', monospace; }
         .serif { font-family: 'Playfair Display', serif; }
         .bebas { font-family: 'Bebas Neue', cursive; }
 
-        /* Sidebar Glassmorphism */
         .glass-panel {
-            background: rgba(10, 10, 10, 0.8);
+            background: rgba(15, 15, 15, 0.9);
             backdrop-filter: blur(20px);
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        /* Custom UI Elements */
         .control-label {
             font-size: 10px;
             font-weight: 900;
-            color: #64748b;
+            color: #94a3b8;
             text-transform: uppercase;
             letter-spacing: 0.15em;
             margin-bottom: 0.75rem;
             display: block;
         }
 
-        input[type="range"] {
-            accent-color: #3b82f6;
-        }
-
-        .active-ring {
-            outline: 2px solid #3b82f6;
-            outline-offset: 2px;
-        }
+        input[type="range"] { accent-color: #3b82f6; }
 
         #main-svg {
-            filter: drop-shadow(0 25px 50px rgba(0,0,0,0.5));
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 25px 50px rgba(0,0,0,0.8));
+            transition: opacity 0.3s ease;
         }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
 
-    <!-- Top Navigation -->
     <nav class="h-14 bg-black border-b border-white/5 flex items-center justify-between px-6 shrink-0 z-50">
         <div class="flex items-center gap-4">
             <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
             </div>
             <h1 class="font-black text-lg tracking-tighter uppercase">NetCard <span class="text-blue-500">Ultra</span></h1>
-            <span class="text-[10px] text-gray-600 border border-white/10 px-2 py-0.5 rounded uppercase">Enterprise v5.1</span>
+            <span class="text-[10px] text-gray-600 border border-white/10 px-2 py-0.5 rounded uppercase font-mono">Build 5.5.0</span>
         </div>
 
         <div class="flex items-center gap-4">
-            <div id="saveStatus" class="text-[10px] font-mono text-emerald-500 opacity-0 transition-opacity">● CLOUD_SYNC_OK</div>
+            <div id="saveStatus" class="text-[10px] font-mono text-blue-400 opacity-0 transition-opacity uppercase">Rendering...</div>
             <button id="exportBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded font-bold text-xs flex items-center gap-2 transition-all active:scale-95">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                DOWNLOAD PRODUCTION PNG
+                EXPORT HQ PNG
             </button>
         </div>
     </nav>
 
     <div class="flex flex-1 overflow-hidden">
-        <!-- Control Sidebar -->
         <aside class="w-80 glass-panel overflow-y-auto p-6 shrink-0 custom-scrollbar">
-            <div class="space-y-8">
+            <div class="space-y-8 pb-12">
                 
-                <!-- 1. Layout & View -->
                 <section>
-                    <span class="control-label">Geometry & View</span>
+                    <span class="control-label">Geometry</span>
                     <div class="grid grid-cols-2 gap-2 mb-2">
                         <button onclick="setOrient('H')" id="btn-H" class="bg-blue-600 text-white p-2 rounded text-[10px] font-bold">HORIZONTAL</button>
-                        <button onclick="setOrient('V')" id="btn-V" class="bg-white/5 text-gray-400 p-2 rounded text-[10px] font-bold hover:bg-white/10">VERTICAL</button>
+                        <button onclick="setOrient('V')" id="btn-V" class="bg-white/5 text-gray-400 p-2 rounded text-[10px] font-bold">VERTICAL</button>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
-                        <button onclick="setView('F')" id="btn-F" class="bg-white/10 text-white p-2 rounded text-[10px] font-bold">FRONT</button>
-                        <button onclick="setView('B')" id="btn-B" class="bg-white/5 text-gray-400 p-2 rounded text-[10px] font-bold hover:bg-white/10">BACK</button>
+                        <button onclick="setView('F')" id="btn-F" class="bg-white/10 text-white p-2 rounded text-[10px] font-bold">FRONT SIDE</button>
+                        <button onclick="setView('B')" id="btn-B" class="bg-white/5 text-gray-400 p-2 rounded text-[10px] font-bold">BACK SIDE</button>
                     </div>
                 </section>
 
-                <!-- 2. Templates -->
                 <section>
                     <span class="control-label">Design Engine</span>
                     <select id="templateSelect" onchange="render()" class="w-full bg-white/5 border border-white/10 rounded p-2.5 text-xs text-white outline-none focus:border-blue-500">
-                        <option value="neo">Neo-Modernist (Default)</option>
+                        <option value="neo">Neo-Modernist</option>
                         <option value="executive">The Executive (Serif)</option>
-                        <option value="cyber">Cyber-Grid (Tech)</option>
+                        <option value="cyber">Cyber-Grid (Mono)</option>
                         <option value="bauhaus">Bauhaus (Geometric)</option>
                         <option value="minimal">Zero (Minimalist)</option>
-                        <option value="dark_brand">Full Image Brand</option>
                     </select>
                 </section>
 
-                <!-- 3. Dynamic Styles -->
                 <section>
-                    <span class="control-label">Style Customization</span>
-                    <div class="space-y-4">
+                    <span class="control-label">Typography Scaling</span>
+                    <div class="space-y-3">
                         <div>
-                            <div class="flex justify-between text-[10px] text-gray-500 mb-1"><span>Texture Opacity</span><span id="txt-val">20%</span></div>
-                            <input type="range" id="textureRange" min="0" max="100" value="20" oninput="render()" class="w-full">
+                            <div class="flex justify-between text-[10px] text-gray-500 mb-1"><span>Name Size</span><span id="v-name">64</span></div>
+                            <input type="range" id="size-name" min="20" max="150" value="64" oninput="render()" class="w-full">
                         </div>
-                        <div class="grid grid-cols-3 gap-3">
-                            <div class="flex flex-col gap-1">
-                                <input type="color" id="col-bg" value="#0a0a0a" oninput="render()" class="w-full h-8 bg-transparent cursor-pointer">
-                                <span class="text-[8px] text-center text-gray-600">BG</span>
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <input type="color" id="col-prime" value="#3b82f6" oninput="render()" class="w-full h-8 bg-transparent cursor-pointer">
-                                <span class="text-[8px] text-center text-gray-600">PRIME</span>
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <input type="color" id="col-text" value="#ffffff" oninput="render()" class="w-full h-8 bg-transparent cursor-pointer">
-                                <span class="text-[8px] text-center text-gray-600">TEXT</span>
-                            </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] text-gray-500 mb-1"><span>Role Size</span><span id="v-role">20</span></div>
+                            <input type="range" id="size-role" min="10" max="60" value="20" oninput="render()" class="w-full">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] text-gray-500 mb-1"><span>Info/Social Size</span><span id="v-info">14</span></div>
+                            <input type="range" id="size-info" min="8" max="40" value="14" oninput="render()" class="w-full">
                         </div>
                     </div>
                 </section>
 
-                <!-- 4. Identity Data -->
                 <section>
                     <span class="control-label">Identity Nodes</span>
                     <div class="space-y-2">
-                        <input type="text" id="data-name" oninput="render()" value="ALEXANDER VANCE" placeholder="Name" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-blue-500">
-                        <input type="text" id="data-role" oninput="render()" value="Creative Director" placeholder="Role" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-blue-500">
-                        <input type="text" id="data-company" oninput="render()" value="VANCE STUDIOS" placeholder="Company" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-blue-500">
-                        <input type="text" id="data-email" oninput="render()" value="hello@vance.com" placeholder="Email" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-blue-500">
-                        <input type="text" id="data-social" oninput="render()" value="@vance_codes" placeholder="Social Handle" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none focus:border-blue-500">
-                        <input type="text" id="data-qr" oninput="render()" value="https://vance.com" placeholder="QR Redirect URL" class="w-full bg-white/5 border border-white/10 rounded p-2 text-[10px] text-blue-400 font-mono outline-none focus:border-blue-500">
+                        <input type="text" id="data-name" oninput="render()" value="ALEXANDER VANCE" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none">
+                        <input type="text" id="data-role" oninput="render()" value="Creative Director" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none">
+                        <input type="text" id="data-company" oninput="render()" value="VANCE STUDIOS" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none">
+                        <input type="text" id="data-email" oninput="render()" value="hello@vance.com" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none">
+                        <input type="text" id="data-social" oninput="render()" value="@vance_codes" class="w-full bg-white/5 border border-white/10 rounded p-2 text-xs text-white outline-none">
+                        <input type="text" id="data-qr" oninput="render()" value="https://vance.com" class="w-full bg-white/5 border border-white/10 rounded p-2 text-[10px] text-blue-400 font-mono outline-none">
                     </div>
                 </section>
 
-                <!-- 5. Asset Manager -->
                 <section>
-                    <span class="control-label">Visual Assets</span>
+                    <span class="control-label">Color Palette</span>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="color" id="col-bg" value="#0a0a0a" oninput="render()" class="w-full h-10 bg-transparent cursor-pointer rounded overflow-hidden">
+                        <input type="color" id="col-prime" value="#3b82f6" oninput="render()" class="w-full h-10 bg-transparent cursor-pointer rounded overflow-hidden">
+                        <input type="color" id="col-text" value="#ffffff" oninput="render()" class="w-full h-10 bg-transparent cursor-pointer rounded overflow-hidden">
+                    </div>
+                </section>
+
+                <section>
+                    <span class="control-label">Assets</span>
                     <div class="flex gap-2">
-                        <label class="flex-1 bg-white/5 border-2 border-dashed border-white/10 rounded p-4 text-center cursor-pointer hover:border-blue-500 transition-all">
-                            <span class="text-[9px] font-bold text-gray-500">UPLOAD PFP/LOGO</span>
+                        <label class="flex-1 bg-white/5 border-2 border-dashed border-white/10 rounded p-3 text-center cursor-pointer hover:border-blue-500 transition-all">
+                            <span class="text-[9px] font-bold text-gray-500">UPLOAD LOGO</span>
                             <input type="file" id="assetInput" onchange="handleFile(this)" class="hidden">
                         </label>
-                        <button onclick="clearAsset()" class="bg-red-900/20 text-red-500 p-2 rounded hover:bg-red-900/40">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                        </button>
+                        <button onclick="clearAsset()" class="bg-red-900/10 text-red-500 px-3 rounded hover:bg-red-900/30">×</button>
                     </div>
                 </section>
             </div>
         </aside>
 
-        <!-- Main Workspace -->
-        <main class="flex-1 bg-[#0a0a0a] relative flex items-center justify-center p-12 overflow-hidden shadow-inner">
-            <div id="canvasWrapper" class="w-full max-w-[900px] aspect-[1050/600] transition-all duration-500">
-                <svg id="main-svg" viewBox="0 0 1050 600" class="w-full h-full rounded shadow-2xl"></svg>
-            </div>
-
-            <!-- UI Helpers -->
-            <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 text-[9px] font-bold tracking-[0.3em] text-gray-600 uppercase">
-                <span>Vector Rendering: Active</span>
-                <span class="w-1 h-1 rounded-full bg-blue-500"></span>
-                <span>Production Mode</span>
+        <main class="flex-1 bg-[#020202] relative flex items-center justify-center p-8 overflow-hidden">
+            <div id="canvasWrapper" class="w-full max-w-[850px] aspect-[1050/600] transition-all duration-500 ease-in-out">
+                <svg id="main-svg" viewBox="0 0 1050 600" class="w-full h-full rounded-sm shadow-2xl"></svg>
             </div>
         </main>
     </div>
@@ -175,15 +153,14 @@
     <canvas id="exportCanvas" class="hidden"></canvas>
 
     <script>
-        // --- State Management ---
         let state = {
             orientation: 'H',
             view: 'F',
             asset: null,
-            qrCache: ''
+            qrBlob: null,
+            isRendering: false
         };
 
-        // --- Core Functions ---
         function setOrient(o) {
             state.orientation = o;
             const wrapper = document.getElementById('canvasWrapper');
@@ -193,10 +170,10 @@
             document.getElementById('btn-V').className = o === 'V' ? 'bg-blue-600 text-white p-2 rounded text-[10px] font-bold' : 'bg-white/5 text-gray-400 p-2 rounded text-[10px] font-bold hover:bg-white/10';
 
             if(o === 'H') {
-                wrapper.className = "w-full max-w-[900px] aspect-[1050/600]";
+                wrapper.className = "w-full max-w-[850px] aspect-[1050/600]";
                 svg.setAttribute('viewBox', '0 0 1050 600');
             } else {
-                wrapper.className = "h-full max-h-[800px] aspect-[600/1050]";
+                wrapper.className = "h-full max-h-[850px] aspect-[600/1050]";
                 svg.setAttribute('viewBox', '0 0 600 1050');
             }
             render();
@@ -209,7 +186,7 @@
             render();
         }
 
-        function handleFile(input) {
+        async function handleFile(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = e => {
@@ -225,8 +202,29 @@
             render();
         }
 
-        // --- Render Engine ---
-        function render() {
+        async function getQrAsDataUrl() {
+            const qrData = document.getElementById('data-qr').value || "https://google.com";
+            const prime = document.getElementById('col-prime').value.replace('#', '');
+            const bg = document.getElementById('col-bg').value.replace('#', '');
+            const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&color=${prime}&bgcolor=${bg}`;
+            
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) {
+                return url; // Fallback to URL if fetch fails
+            }
+        }
+
+        async function render() {
+            if (state.isRendering) return;
+            state.isRendering = true;
+
             const svg = document.getElementById('main-svg');
             const W = state.orientation === 'H' ? 1050 : 600;
             const H = state.orientation === 'H' ? 600 : 1050;
@@ -236,129 +234,206 @@
             const bg = document.getElementById('col-bg').value;
             const prime = document.getElementById('col-prime').value;
             const txt = document.getElementById('col-text').value;
-            const textureOpacity = document.getElementById('textureRange').value / 100;
 
-            const name = document.getElementById('data-name').value || "YOUR NAME";
+            // Identity
+            const name = document.getElementById('data-name').value || "NAME";
             const role = document.getElementById('data-role').value || "ROLE";
             const company = document.getElementById('data-company').value || "COMPANY";
             const email = document.getElementById('data-email').value;
             const social = document.getElementById('data-social').value;
-            const qrData = document.getElementById('data-qr').value || "https://github.com";
 
-            // Generate Functional QR
-            const qrColor = prime.replace('#', '');
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}&color=${qrColor}&bgcolor=${bg.replace('#', '')}`;
+            // Sizes
+            const szName = document.getElementById('size-name').value;
+            const szRole = document.getElementById('size-role').value;
+            const szInfo = document.getElementById('size-info').value;
 
-            let html = `<rect width="${W}" height="${H}" fill="${bg}" />`;
+            document.getElementById('v-name').innerText = szName;
+            document.getElementById('v-role').innerText = szRole;
+            document.getElementById('v-info').innerText = szInfo;
 
-            // Texture Layer
-            html += `<rect width="${W}" height="${H}" fill="url(#grid)" opacity="${textureOpacity}" />`;
-            html += `<defs>
-                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="${prime}" stroke-width="0.5" />
-                </pattern>
-                <clipPath id="pfpClip">
-                    ${template === 'bauhaus' ? `<rect x="0" y="0" width="300" height="300" />` : `<circle cx="150" cy="150" r="150" />`}
-                </clipPath>
-            </defs>`;
+            // Ensure QR is pre-converted to base64 for export reliability
+            const qrDataUrl = await getQrAsDataUrl();
+
+            let html = `
+                <defs>
+                    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                        <path d="M 30 0 L 0 0 0 30" fill="none" stroke="${prime}" stroke-width="0.3" opacity="0.3" />
+                    </pattern>
+                    <clipPath id="circleClip"><circle cx="100" cy="100" r="100" /></clipPath>
+                    <clipPath id="sqClip"><rect x="0" y="0" width="200" height="200" /></clipPath>
+                </defs>
+                <rect width="${W}" height="${H}" fill="${bg}" />
+                <rect width="${W}" height="${H}" fill="url(#grid)" />
+            `;
 
             if (state.view === 'F') {
                 switch(template) {
                     case 'executive':
-                        html += `
-                            <rect x="50" y="50" width="${W-100}" height="${H-100}" fill="none" stroke="${prime}" stroke-width="2" />
-                            <g transform="translate(${W/2}, ${H/2-40})">
-                                <text text-anchor="middle" font-family="'Playfair Display', serif" font-size="72" fill="${txt}">${name}</text>
-                                <text y="50" text-anchor="middle" font-family="Inter" font-size="16" letter-spacing="10" fill="${prime}">${role.toUpperCase()}</text>
-                            </g>
-                            <g transform="translate(${W/2-40}, ${H-140})">
-                                <image href="${qrUrl}" width="80" height="80" />
-                            </g>
-                        `;
+                        const fontSerif = "'Playfair Display', serif";
+                        html += `<rect x="40" y="40" width="${W-80}" height="${H-80}" fill="none" stroke="${prime}" stroke-width="1.5" />`;
+                        if (isH) {
+                            html += `
+                                <g transform="translate(${W/2}, ${H/2-30})">
+                                    <text text-anchor="middle" font-family="${fontSerif}" font-size="${szName}" fill="${txt}">${name}</text>
+                                    <text y="${parseInt(szName/2) + 20}" text-anchor="middle" font-family="Inter" font-size="${szRole}" letter-spacing="12" font-weight="300" fill="${prime}">${role.toUpperCase()}</text>
+                                </g>
+                                <image href="${qrDataUrl}" x="${W/2-40}" y="${H-140}" width="80" height="80" />
+                            `;
+                        } else {
+                            html += `
+                                <g transform="translate(${W/2}, ${H/3})">
+                                    <text text-anchor="middle" font-family="${fontSerif}" font-size="${szName}" fill="${txt}">${name}</text>
+                                    <text y="${parseInt(szName/2) + 20}" text-anchor="middle" font-family="Inter" font-size="${szRole}" letter-spacing="6" font-weight="300" fill="${prime}">${role.toUpperCase()}</text>
+                                </g>
+                                <image href="${qrDataUrl}" x="${W/2-60}" y="${H-220}" width="120" height="120" />
+                            `;
+                        }
                         break;
+
                     case 'cyber':
-                        html += `
-                            <path d="M 0 0 L 300 0 L 250 50 L 0 50 Z" fill="${prime}" />
-                            <text x="20" y="32" font-family="'JetBrains Mono'" font-size="14" fill="${bg}">ID_NODE // VERIFIED</text>
-                            <g transform="translate(80, ${H/2})">
-                                <text font-family="'JetBrains Mono'" font-size="82" font-weight="900" fill="${txt}">${name}</text>
-                                <text y="40" font-family="'JetBrains Mono'" font-size="24" fill="${prime}">${role}</text>
-                            </g>
-                            <image href="${qrUrl}" x="${W-150}" y="${H-150}" width="100" height="100" />
-                        `;
+                        const fontMono = "'JetBrains Mono', monospace";
+                        html += `<path d="M 0 0 L ${W*0.4} 0 L ${W*0.35} 40 L 0 40 Z" fill="${prime}" />`;
+                        html += `<text x="15" y="26" font-family="${fontMono}" font-size="12" fill="${bg}" font-weight="900">NODE_VERIFIED // ${Date.now().toString().slice(-6)}</text>`;
+                        if (isH) {
+                            html += `
+                                <g transform="translate(60, ${H/2})">
+                                    <text font-family="${fontMono}" font-size="${szName}" font-weight="900" fill="${txt}" style="text-transform:uppercase">${name}</text>
+                                    <text y="${szName*0.8}" font-family="${fontMono}" font-size="${szRole}" fill="${prime}">${role}</text>
+                                </g>
+                                <image href="${qrDataUrl}" x="${W-160}" y="${H-160}" width="120" height="120" />
+                            `;
+                        } else {
+                            html += `
+                                <g transform="translate(40, ${H*0.4})">
+                                    <text font-family="${fontMono}" font-size="${szName}" font-weight="900" fill="${txt}" style="text-transform:uppercase">${name}</text>
+                                    <text y="${szName*0.8}" font-family="${fontMono}" font-size="${szRole}" fill="${prime}">${role}</text>
+                                </g>
+                                <image href="${qrDataUrl}" x="${W-180}" y="${H-180}" width="140" height="140" />
+                            `;
+                        }
                         break;
+
                     case 'bauhaus':
-                        html += `
-                            <rect x="0" y="0" width="${W/3}" height="${H}" fill="${prime}" opacity="0.1" />
-                            <circle cx="${W/3}" cy="${H/2}" r="100" fill="${prime}" />
-                            <g transform="translate(${W/2}, ${H/2})">
-                                <text font-family="'Bebas Neue'" font-size="120" fill="${txt}">${name}</text>
-                                <text y="40" font-family="Inter" font-size="20" font-weight="900" fill="${prime}">${role}</text>
-                            </g>
-                            <image href="${qrUrl}" x="50" y="${H-150}" width="100" height="100" />
-                        `;
+                        html += `<circle cx="${isH ? W*0.8 : W/2}" cy="${isH ? H/2 : H*0.2}" r="${isH ? 200 : 150}" fill="${prime}" opacity="0.15" />`;
+                        html += `<rect x="0" y="${H-60}" width="${W}" height="60" fill="${prime}" />`;
+                        const fontBebas = "'Bebas Neue', cursive";
+                        if (isH) {
+                            html += `
+                                <g transform="translate(60, ${H/2+40})">
+                                    <text font-family="${fontBebas}" font-size="${szName}" fill="${txt}">${name}</text>
+                                    <text y="40" font-family="Inter" font-size="${szRole}" font-weight="900" fill="${prime}">${role}</text>
+                                </g>
+                                <image href="${qrDataUrl}" x="${W-180}" y="60" width="120" height="120" />
+                            `;
+                        } else {
+                            html += `
+                                <g transform="translate(${W/2}, ${H/2})">
+                                    <text text-anchor="middle" font-family="${fontBebas}" font-size="${szName}" fill="${txt}">${name}</text>
+                                    <text y="50" text-anchor="middle" font-family="Inter" font-size="${szRole}" font-weight="900" fill="${prime}">${role}</text>
+                                </g>
+                                <image href="${qrDataUrl}" x="${W/2-60}" y="${H-250}" width="120" height="120" />
+                            `;
+                        }
                         break;
+
+                    case 'minimal':
+                         html += `<line x1="60" y1="${H/2}" x2="${W-60}" y2="${H/2}" stroke="${prime}" stroke-width="0.5" />`;
+                         if (isH) {
+                            html += `
+                                <text x="60" y="${H/2 - 20}" font-family="Inter" font-size="${szName}" font-weight="900" fill="${txt}">${name}</text>
+                                <text x="60" y="${H/2 + 40}" font-family="Inter" font-size="${szRole}" fill="${prime}">${role}</text>
+                                <image href="${qrDataUrl}" x="${W-140}" y="${H-140}" width="80" height="80" />
+                            `;
+                         } else {
+                            html += `
+                                <text x="40" y="${H/2 - 20}" font-family="Inter" font-size="${szName}" font-weight="900" fill="${txt}">${name}</text>
+                                <text x="40" y="${H/2 + 40}" font-family="Inter" font-size="${szRole}" fill="${prime}">${role}</text>
+                                <image href="${qrDataUrl}" x="${W/2-50}" y="${H-180}" width="100" height="100" />
+                            `;
+                         }
+                         break;
+
                     default: // Neo-Modernist
-                        html += `
-                            <path d="M ${W*0.7} 0 L ${W} 0 L ${W} ${H} L ${W*0.5} ${H} Z" fill="${prime}" fill-opacity="0.1" />
-                            <rect x="${W-20}" y="0" width="20" height="${H}" fill="${prime}" />
-                            ${state.asset ? `
-                                <g transform="translate(${isH ? 80 : W/2-100}, 80)">
-                                    <image href="${state.asset}" width="200" height="200" clip-path="url(#pfpClip)" preserveAspectRatio="xMidYMid slice" />
+                        html += `<rect x="${W-15}" y="0" width="15" height="${H}" fill="${prime}" />`;
+                        if (isH) {
+                            html += `
+                                <path d="M ${W*0.6} 0 L ${W} 0 L ${W} ${H} L ${W*0.4} ${H} Z" fill="${prime}" opacity="0.05" />
+                                ${state.asset ? `<image href="${state.asset}" x="80" y="80" width="160" height="160" clip-path="url(#circleClip)" />` : ''}
+                                <g transform="translate(80, ${H-180})">
+                                    <text font-family="Inter" font-size="${szName}" font-weight="900" fill="${txt}">${name}</text>
+                                    <text y="45" font-family="Inter" font-size="${szRole}" font-weight="700" fill="${prime}">${role.toUpperCase()}</text>
+                                    <g transform="translate(0, 90)" font-family="'JetBrains Mono'" font-size="${szInfo}" fill="${txt}" opacity="0.6">
+                                        <text y="0">${email}</text>
+                                        <text y="22">${social}</text>
+                                    </g>
                                 </g>
-                            ` : ''}
-                            <g transform="translate(80, ${isH ? H-220 : H-350})">
-                                <text font-family="Inter" font-size="64" font-weight="900" fill="${txt}">${name}</text>
-                                <text y="45" font-family="Inter" font-size="20" font-weight="700" fill="${prime}">${role.toUpperCase()}</text>
-                                <g transform="translate(0, 100)" font-family="'JetBrains Mono'" font-size="14" fill="${txt}" opacity="0.6">
-                                    <text y="0">${email}</text>
-                                    <text y="25">${social}</text>
+                                <image href="${qrDataUrl}" x="${W-160}" y="${H-160}" width="120" height="120" />
+                            `;
+                        } else {
+                            html += `
+                                <path d="M 0 ${H*0.7} L ${W} ${H*0.5} L ${W} ${H} L 0 ${H} Z" fill="${prime}" opacity="0.05" />
+                                ${state.asset ? `<image href="${state.asset}" x="${W/2-80}" y="80" width="160" height="160" clip-path="url(#circleClip)" />` : ''}
+                                <g transform="translate(${W/2}, ${H/2+40})">
+                                    <text text-anchor="middle" font-family="Inter" font-size="${szName}" font-weight="900" fill="${txt}">${name}</text>
+                                    <text y="50" text-anchor="middle" font-family="Inter" font-size="${szRole}" font-weight="700" fill="${prime}">${role.toUpperCase()}</text>
+                                    <g transform="translate(0, 100)" text-anchor="middle" font-family="'JetBrains Mono'" font-size="${szInfo}" fill="${txt}" opacity="0.6">
+                                        <text y="0">${email}</text>
+                                        <text y="30">${social}</text>
+                                    </g>
                                 </g>
-                            </g>
-                            <rect x="${W-160}" y="${H-160}" width="120" height="120" fill="white" rx="10" />
-                            <image href="${qrUrl}" x="${W-150}" y="${H-150}" width="100" height="100" />
-                        `;
+                                <image href="${qrDataUrl}" x="${W/2-60}" y="${H-180}" width="120" height="120" />
+                            `;
+                        }
                 }
             } else {
-                // Back Side
+                // Back Side Layout
                 html += `
                     <g transform="translate(${W/2}, ${H/2})">
-                        <circle r="120" fill="${prime}" fill-opacity="0.1" />
-                        <text text-anchor="middle" font-family="Inter" font-size="62" font-weight="900" fill="${txt}">${company}</text>
-                        <text y="40" text-anchor="middle" font-family="Inter" font-size="12" letter-spacing="8" fill="${prime}">WWW.NETCARD-STUDIO.IO</text>
+                        <circle r="${isH ? 180 : 140}" fill="${prime}" opacity="0.03" stroke="${prime}" stroke-width="0.5" />
+                        <text text-anchor="middle" font-family="Inter" font-size="${szName}" font-weight="900" fill="${txt}" style="letter-spacing:4px">${company}</text>
+                        <text y="50" text-anchor="middle" font-family="'JetBrains Mono'" font-size="12" letter-spacing="8" fill="${prime}">WWW.NETCARD-STUDIO.IO</text>
                     </g>
+                    <rect x="${W/2-20}" y="${H-40}" width="40" height="2" fill="${prime}" />
                 `;
             }
 
             svg.innerHTML = html;
+            state.isRendering = false;
             
-            // Notification Simulation
             const status = document.getElementById('saveStatus');
             status.style.opacity = "1";
-            setTimeout(() => status.style.opacity = "0", 1000);
+            setTimeout(() => status.style.opacity = "0", 600);
         }
 
-        // --- Export High Res ---
-        document.getElementById('exportBtn').addEventListener('click', () => {
+        document.getElementById('exportBtn').addEventListener('click', async () => {
             const svg = document.getElementById('main-svg');
             const canvas = document.getElementById('exportCanvas');
             const ctx = canvas.getContext('2d');
             
             const isH = state.orientation === 'H';
-            const scale = 4;
-            canvas.width = (isH ? 1050 : 600) * scale;
-            canvas.height = (isH ? 600 : 1050) * scale;
+            const baseW = isH ? 1050 : 600;
+            const baseH = isH ? 600 : 1050;
+            const scale = 3; 
 
-            const data = new XMLSerializer().serializeToString(svg);
+            canvas.width = baseW * scale;
+            canvas.height = baseH * scale;
+
+            // Use XMLSerializer but ensure all images are data URLs (handled in render)
+            const serializer = new XMLSerializer();
+            let svgStr = serializer.serializeToString(svg);
+            
             const img = new Image();
-            const blob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'});
-            const url = URL.createObjectURL(blob);
+            const svgBlob = new Blob([svgStr], {type: 'image/svg+xml;charset=utf-8'});
+            const url = URL.createObjectURL(svgBlob);
 
             img.onload = () => {
+                ctx.fillStyle = document.getElementById('col-bg').value;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
                 const link = document.createElement('a');
-                link.download = `NETCARD_EXPORT_${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
+                link.download = `NETCARD_${state.view}_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png', 1.0);
                 link.click();
                 URL.revokeObjectURL(url);
             };
