@@ -16,6 +16,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .animate-clip { animation: fadeIn 0.3s ease-out forwards; }
+        .modal-backdrop { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen font-sans">
@@ -30,9 +31,14 @@
                     <p class="text-sm text-slate-500">Premium TTS for Creators</p>
                 </div>
             </div>
-            <div class="flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium">
-                <i data-lucide="sparkles" class="w-3 h-3"></i>
-                Gemini 2.5 TTS
+            <div class="flex items-center gap-3">
+                <button id="openSettings" class="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                </button>
+                <div class="flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium">
+                    <i data-lucide="sparkles" class="w-3 h-3"></i>
+                    Gemini 2.5 TTS
+                </div>
             </div>
         </header>
 
@@ -89,8 +95,28 @@
         </div>
     </div>
 
+    <!-- API Key Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 modal-backdrop">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">API Settings</h3>
+                <button id="closeSettings" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p class="text-sm text-slate-500 mb-4">Enter your Google AI Studio API Key. This is saved only in your browser.</p>
+            <input type="password" id="apiKeyInput" 
+                class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl mb-4 focus:ring-2 focus:ring-indigo-500 outline-none"
+                placeholder="AIzaSy...">
+            <button id="saveSettings" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors">
+                Save Key
+            </button>
+        </div>
+    </div>
+
     <script>
-        const apiKey = ""; // API key is handled by the environment
+        // Use environment key if available, otherwise check localStorage
+        let currentApiKey = typeof __api_key !== 'undefined' ? "" : (localStorage.getItem('gemini_tts_key') || "");
         const MODEL_NAME = "gemini-2.5-flash-preview-tts";
 
         const VOICES = [
@@ -113,6 +139,20 @@
         const loaderIcon = document.getElementById('loaderIcon');
         const plusIcon = document.getElementById('plusIcon');
         const btnText = document.getElementById('btnText');
+        const settingsModal = document.getElementById('settingsModal');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+
+        // Modal Logic
+        document.getElementById('openSettings').onclick = () => {
+            apiKeyInput.value = currentApiKey;
+            settingsModal.classList.remove('hidden');
+        };
+        document.getElementById('closeSettings').onclick = () => settingsModal.classList.add('hidden');
+        document.getElementById('saveSettings').onclick = () => {
+            currentApiKey = apiKeyInput.value.trim();
+            localStorage.setItem('gemini_tts_key', currentApiKey);
+            settingsModal.classList.add('hidden');
+        };
 
         function initVoices() {
             voiceGrid.innerHTML = '';
@@ -134,7 +174,6 @@
             lucide.createIcons();
         }
 
-        // Convert PCM16 to WAV for browser playback
         function pcmToWav(pcmBase64, sampleRate = 24000) {
             const binaryString = window.atob(pcmBase64);
             const len = binaryString.length;
@@ -155,8 +194,8 @@
             writeString(8, 'WAVE');
             writeString(12, 'fmt ');
             view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true); // PCM
-            view.setUint16(22, 1, true); // Mono
+            view.setUint16(20, 1, true); 
+            view.setUint16(22, 1, true); 
             view.setUint32(24, sampleRate, true);
             view.setUint32(28, sampleRate * 2, true);
             view.setUint16(32, 2, true);
@@ -172,6 +211,12 @@
         }
 
         async function generateVoice(retryCount = 0) {
+            if (!currentApiKey && typeof __api_key === 'undefined') {
+                errorBox.textContent = "Please set your API Key in Settings (gear icon) to use this on your own site.";
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
             const text = scriptInput.value.trim();
             if (!text) return;
 
@@ -179,39 +224,36 @@
             errorBox.classList.add('hidden');
 
             const payload = {
-                contents: [{ 
-                    parts: [{ text: `${styleSelect.value} ${text}` }] 
-                }],
+                contents: [{ parts: [{ text: `${styleSelect.value} ${text}` }] }],
                 generationConfig: {
                     responseModalities: ["AUDIO"],
                     speechConfig: {
                         voiceConfig: {
-                            prebuiltVoiceConfig: { 
-                                voiceName: selectedVoice 
-                            }
+                            prebuiltVoiceConfig: { voiceName: selectedVoice }
                         }
                     }
                 }
             };
 
             try {
-                // Using the v1beta generateContent endpoint specifically for TTS
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
-                
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                // Determine which key to use (Environment vs LocalStorage)
+                const keyToUse = (typeof apiKey !== 'undefined' && apiKey !== "") ? apiKey : currentApiKey;
+
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${keyToUse}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    }
+                );
 
                 if (!response.ok) {
-                    // Mandatory exponential backoff
                     if (response.status === 429 && retryCount < 5) {
                         const delays = [1000, 2000, 4000, 8000, 16000];
-                        await new Promise(resolve => setTimeout(resolve, delays[retryCount]));
+                        await new Promise(r => setTimeout(r, delays[retryCount]));
                         return generateVoice(retryCount + 1);
                     }
-                    
                     const errorJson = await response.json().catch(() => ({}));
                     throw new Error(errorJson.error?.message || `API Error ${response.status}`);
                 }
@@ -219,15 +261,12 @@
                 const result = await response.json();
                 const audioData = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
                 
-                if (!audioData) {
-                    throw new Error("No audio was returned. The text may have been flagged or is too short.");
-                }
+                if (!audioData) throw new Error("No audio data returned.");
 
                 const audioUrl = pcmToWav(audioData);
                 addClip(text, audioUrl);
                 scriptInput.value = '';
             } catch (err) {
-                console.error("TTS Failure:", err);
                 errorBox.textContent = err.message;
                 errorBox.classList.remove('hidden');
             } finally {
