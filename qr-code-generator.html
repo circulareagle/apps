@@ -110,27 +110,125 @@
             <!-- Result -->
             <div id="qr-container" class="hidden flex flex-col items-center space-y-4 pt-4 border-t border-slate-700">
                 <div id="qrcode" class="p-2 rounded-lg bg-white shadow-inner"></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Architect Pro</title>
+    <!-- Using bwip-js for professional grade QR generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bwip-js/3.0.4/bwip-js-min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .qr-wrapper {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            width: 100%;
+        }
+        #qrcode-canvas {
+            width: 100% !important; /* Forces the high-res canvas to fit the UI container */
+            height: auto !important;
+            image-rendering: pixelated; /* Ensures the QR squares stay sharp on screen */
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            transition: all 0.2s ease;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full glass-card rounded-3xl p-6 md:p-8 shadow-2xl">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+                QR Architect
+            </h1>
+            <p class="text-slate-400 mt-2 text-sm font-medium">Ultra-Sharp & Scannable Generator</p>
+        </div>
+
+        <div class="space-y-5">
+            <!-- Input -->
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Content (URL or Text)</label>
+                <textarea id="text-input" 
+                    placeholder="https://example.com" 
+                    class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all h-28 resize-none text-base"
+                >https://google.com</textarea>
+            </div>
+
+            <!-- Settings -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Resolution</label>
+                    <select id="scale-input" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none cursor-pointer">
+                        <option value="5">Standard (SD)</option>
+                        <option value="10" selected>High Detail (HD)</option>
+                        <option value="20">Ultra Clear (4K)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Error Margin</label>
+                    <select id="error-input" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none cursor-pointer">
+                        <option value="L">7% (Basic)</option>
+                        <option value="M" selected>15% (Safe)</option>
+                        <option value="Q">25% (Robust)</option>
+                        <option value="H">30% (Best)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Action -->
+            <button onclick="generateQR()" class="w-full btn-primary text-white font-bold py-4 rounded-xl shadow-lg text-lg">
+                Generate QR Code
+            </button>
+
+            <!-- Result Area -->
+            <div id="qr-container" class="hidden space-y-4 animate-in fade-in zoom-in duration-300">
+                <div class="qr-wrapper">
+                    <!-- The canvas width/height will be set via JS based on scale -->
+                    <canvas id="qrcode-canvas"></canvas>
+                </div>
                 
-                <div class="flex gap-2 w-full">
-                    <button onclick="downloadQR()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-sm py-2 rounded-md transition-colors">
+                <div class="flex gap-3">
+                    <button onclick="downloadQR()" class="flex-1 bg-white/10 hover:bg-white/20 text-white font-semibold py-3 rounded-xl transition-all border border-white/10">
                         Download PNG
                     </button>
-                    <button onclick="copyToClipboard()" id="copy-btn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-sm py-2 rounded-md transition-colors">
-                        Copy Link
+                    <button onclick="copyToClipboard()" class="flex-1 bg-white/10 hover:bg-white/20 text-white font-semibold py-3 rounded-xl transition-all border border-white/10">
+                        Copy Text
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Custom Notification Toast -->
-        <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-2 rounded-full text-sm opacity-0 transition-opacity pointer-events-none z-50">
-            Copied to clipboard!
+        <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-8 py-3 rounded-full text-sm font-bold opacity-0 transition-opacity pointer-events-none z-50 shadow-2xl">
+            Copied!
         </div>
     </div>
 
     <script>
-        let qrInstance = null;
-
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.innerText = message;
@@ -142,81 +240,79 @@
 
         function generateQR() {
             const text = document.getElementById('text-input').value.trim();
-            const size = parseInt(document.getElementById('size-input').value);
-            const correction = document.getElementById('error-input').value;
+            const scale = parseInt(document.getElementById('scale-input').value);
+            const ec = document.getElementById('error-input').value;
             const container = document.getElementById('qr-container');
-            const qrDiv = document.getElementById('qrcode');
+            const canvas = document.getElementById('qrcode-canvas');
 
             if (!text) {
-                showToast("Please enter some text or a URL");
+                showToast("Please enter some content");
                 return;
             }
 
-            qrDiv.innerHTML = "";
-            container.classList.remove('hidden');
-
-            // Initialize QRCode
-            qrInstance = new QRCode(qrDiv, {
-                text: text,
-                width: size,
-                height: size,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel[correction]
-            });
-
-            container.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            try {
+                // Generate the QR
+                // scale: represents pixels per dark module. 
+                // Higher scale = higher internal resolution.
+                bwipjs.toCanvas(canvas, {
+                    bcid: 'qrcode',
+                    text: text,
+                    scale: scale, 
+                    eclevel: ec,
+                    paddingwidth: 4,      // Added padding for scannability
+                    paddingheight: 4,
+                    backgroundcolor: 'ffffff'
+                });
+                
+                container.classList.remove('hidden');
+                
+                // Add a small delay to ensure UI reflow before scrolling
+                setTimeout(() => {
+                    container.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }, 50);
+            } catch (e) {
+                console.error(e);
+                showToast("Generation failed. Check your input.");
+            }
         }
 
         function downloadQR() {
-            // qrcode.js generates both a canvas and an img. 
-            // The img usually contains the base64 data.
-            const img = document.querySelector('#qrcode img');
-            const canvas = document.querySelector('#qrcode canvas');
-            
-            let dataUrl = "";
-            
-            if (img && img.src && img.src.startsWith('data:image')) {
-                dataUrl = img.src;
-            } else if (canvas) {
-                dataUrl = canvas.toDataURL("image/png");
-            }
+            const canvas = document.getElementById('qrcode-canvas');
+            if (!canvas) return;
 
-            if (!dataUrl) {
-                showToast("Please wait for QR code to render...");
-                return;
+            try {
+                const dataUrl = canvas.toDataURL("image/png");
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = `QR_Architect_${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (err) {
+                showToast("Download failed.");
             }
-
-            // Create temporary link and trigger download
-            const link = document.createElement('a');
-            link.href = dataUrl;
-            link.download = 'qr-code.png';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
         }
 
         function copyToClipboard() {
             const text = document.getElementById('text-input').value;
-            // Use execCommand for better compatibility in sandboxed iframes
             const tempInput = document.createElement('input');
             tempInput.value = text;
             document.body.appendChild(tempInput);
             tempInput.select();
             try {
                 document.execCommand('copy');
-                showToast("Link copied to clipboard!");
+                showToast("Text copied!");
             } catch (err) {
-                showToast("Failed to copy.");
+                showToast("Copy failed.");
             }
             document.body.removeChild(tempInput);
         }
 
-        window.onload = () => {
-            generateQR();
-        };
+        // Generate default on load
+        window.onload = generateQR;
     </script>
 </body>
 </html>
+
 
 
