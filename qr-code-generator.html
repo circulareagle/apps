@@ -26,6 +26,36 @@
             background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
             transition: transform 0.2s, opacity 0.2s;
         }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Architect</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #qrcode img, #qrcode canvas {
+            margin: 0 auto;
+            border-radius: 8px;
+            padding: 12px;
+            background: white;
+            max-width: 100%;
+            height: auto;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            transition: transform 0.2s, opacity 0.2s;
+        }
         .btn-primary:active {
             transform: scale(0.98);
         }
@@ -86,20 +116,20 @@
                         Download PNG
                     </button>
                     <button onclick="copyToClipboard()" id="copy-btn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-sm py-2 rounded-md transition-colors">
-                        Copy Status
+                        Copy Link
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- Custom Notification Toast -->
-        <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-2 rounded-full text-sm opacity-0 transition-opacity pointer-events-none">
+        <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-4 py-2 rounded-full text-sm opacity-0 transition-opacity pointer-events-none z-50">
             Copied to clipboard!
         </div>
     </div>
 
     <script>
-        let qrcode = null;
+        let qrInstance = null;
 
         function showToast(message) {
             const toast = document.getElementById('toast');
@@ -122,12 +152,11 @@
                 return;
             }
 
-            // Clear previous
             qrDiv.innerHTML = "";
             container.classList.remove('hidden');
 
-            // Generate
-            qrcode = new QRCode(qrDiv, {
+            // Initialize QRCode
+            qrInstance = new QRCode(qrDiv, {
                 text: text,
                 width: size,
                 height: size,
@@ -136,36 +165,58 @@
                 correctLevel: QRCode.CorrectLevel[correction]
             });
 
-            // Smooth scroll to result if on mobile
             container.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }
 
         function downloadQR() {
+            // qrcode.js generates both a canvas and an img. 
+            // The img usually contains the base64 data.
             const img = document.querySelector('#qrcode img');
-            if (!img) return;
+            const canvas = document.querySelector('#qrcode canvas');
+            
+            let dataUrl = "";
+            
+            if (img && img.src && img.src.startsWith('data:image')) {
+                dataUrl = img.src;
+            } else if (canvas) {
+                dataUrl = canvas.toDataURL("image/png");
+            }
 
+            if (!dataUrl) {
+                showToast("Please wait for QR code to render...");
+                return;
+            }
+
+            // Create temporary link and trigger download
             const link = document.createElement('a');
+            link.href = dataUrl;
             link.download = 'qr-code.png';
-            link.href = img.src;
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
         }
 
         function copyToClipboard() {
             const text = document.getElementById('text-input').value;
+            // Use execCommand for better compatibility in sandboxed iframes
             const tempInput = document.createElement('input');
             tempInput.value = text;
             document.body.appendChild(tempInput);
             tempInput.select();
-            document.execCommand('copy');
+            try {
+                document.execCommand('copy');
+                showToast("Link copied to clipboard!");
+            } catch (err) {
+                showToast("Failed to copy.");
+            }
             document.body.removeChild(tempInput);
-            showToast("Content link copied!");
         }
 
-        // Initial generation
         window.onload = () => {
             generateQR();
         };
     </script>
 </body>
 </html>
+
 
