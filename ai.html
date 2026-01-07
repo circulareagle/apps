@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>All‑in‑One Video Subtitle / Caption Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- FFmpeg.wasm -->
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
+
+  <style>
+    video { max-height: 360px; }
+    .caption-preview {
+      position: absolute;
+      bottom: 8%;
+      width: 100%;
+      text-align: center;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 p-6">
+
+<h1 class="text-3xl font-bold mb-6">Video Subtitle / Caption Generator</h1>
+
+<div class="grid md:grid-cols-2 gap-6">
+
+  <!-- VIDEO INPUT -->
+  <div class="space-y-4">
+    <input type="file" id="videoInput" accept="video/*" class="block w-full" />
+    <div class="relative">
+      <video id="video" controls class="w-full rounded"></video>
+      <div id="captionOverlay" class="caption-preview text-white"></div>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="space-y-4">
+
+    <!-- SPEECH TO TEXT -->
+    <button onclick="startTranscription()" class="bg-blue-600 px-4 py-2 rounded">Auto‑Generate Captions</button>
+
+    <textarea id="captionText" rows="5" class="w-full bg-zinc-900 p-3 rounded" placeholder="Captions will appear here..."></textarea>
+
+    <!-- STYLES -->
+    <div class="grid grid-cols-2 gap-3">
+      <select id="fontStyle" class="bg-zinc-900 p-2 rounded">
+        <option value="font-sans">Sans</option>
+        <option value="font-serif">Serif</option>
+        <option value="font-mono">Mono</option>
+        <option value="italic">Italic</option>
+        <option value="uppercase">Uppercase</option>
+      </select>
+
+      <select id="captionSize" class="bg-zinc-900 p-2 rounded">
+        <option value="text-lg">Large</option>
+        <option value="text-xl">XL</option>
+        <option value="text-2xl">2XL</option>
+        <option value="text-3xl">3XL</option>
+      </select>
+
+      <select id="captionColor" class="bg-zinc-900 p-2 rounded">
+        <option value="text-white">White</option>
+        <option value="text-yellow-400">Yellow</option>
+        <option value="text-green-400">Green</option>
+        <option value="text-red-400">Red</option>
+      </select>
+
+      <select id="captionBg" class="bg-zinc-900 p-2 rounded">
+        <option value="">No Background</option>
+        <option value="bg-black/60 px-3 py-1 rounded">Black BG</option>
+        <option value="bg-white/70 text-black px-3 py-1 rounded">White BG</option>
+      </select>
+    </div>
+
+    <button onclick="applyCaptionStyle()" class="bg-green-600 px-4 py-2 rounded">Preview Caption</button>
+
+    <button onclick="burnCaptions()" class="bg-red-600 px-4 py-2 rounded">Burn Captions into Video</button>
+
+    <a id="downloadLink" class="hidden underline text-blue-400" download="captioned.mp4">Download Video</a>
+
+  </div>
+</div>
+
+<script>
+let recognition;
+let ffmpeg;
+
+const video = document.getElementById('video');
+const captionOverlay = document.getElementById('captionOverlay');
+
+// Load video
+videoInput.onchange = e => {
+  const file = e.target.files[0];
+  video.src = URL.createObjectURL(file);
+};
+
+// Speech‑to‑Text (Browser‑based)
+function startTranscription() {
+  if (!('webkitSpeechRecognition' in window)) {
+    alert('Speech recognition not supported');
+    return;
+  }
+
+  recognition = new webkitSpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = e => {
+    let transcript = '';
+    for (let i = 0; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript + ' ';
+    }
+    captionText.value = transcript;
+    captionOverlay.innerText = transcript;
+  };
+
+  recognition.start();
+}
+
+// Apply style preview
+function applyCaptionStyle() {
+  captionOverlay.className = 'caption-preview';
+  captionOverlay.classList.add(
+    fontStyle.value,
+    captionSize.value,
+    captionColor.value
+  );
+
+  if (captionBg.value) {
+    captionOverlay.className += ' ' + captionBg.value;
+  }
+
+  captionOverlay.innerText = captionText.value;
+}
+
+// Burn captions using ffmpeg.wasm
+async function burnCaptions() {
+  if (!ffmpeg) {
+    ffmpeg = new FFmpeg();
+    await ffmpeg.load({ coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js' });
+  }
+
+  const videoFile = videoInput.files[0];
+  await ffmpeg.writeFile('input.mp4', await fetchFile(videoFile));
+
+  const subtitleText = captionText.value.replace(/'/g, "\\'");
+
+  await ffmpeg.exec([
+    '-i', 'input.mp4',
+    '-vf', `drawtext=text='${subtitleText}':fontcolor=white:fontsize=32:x=(w-text_w)/2:y=h-100:box=1:boxcolor=black@0.6`,
+    '-codec:a', 'copy',
+    'output.mp4'
+  ]);
+
+  const data = await ffmpeg.readFile('output.mp4');
+  const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+
+  downloadLink.href = url;
+  downloadLink.classList.remove('hidden');
+}
+</script>
+
+</body>
+</html>
