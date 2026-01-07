@@ -3,118 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Generator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            background-color: #0f172a;
-            color: #f8fafc;
-        }
-        .glass-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        #qrcode img {
-            margin: 0 auto;
-            border-radius: 8px;
-            padding: 12px;
-            background: white; /* QR codes need contrast to be scannable */
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-            transition: transform 0.2s, opacity 0.2s;
-        }
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Architect</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            background-color: #0f172a;
-            color: #f8fafc;
-        }
-        .glass-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        #qrcode img, #qrcode canvas {
-            margin: 0 auto;
-            border-radius: 8px;
-            padding: 12px;
-            background: white;
-            max-width: 100%;
-            height: auto;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-            transition: transform 0.2s, opacity 0.2s;
-        }
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
-    </style>
-</head>
-<body class="min-h-screen flex items-center justify-center p-4">
-
-    <div class="max-w-md w-full glass-card rounded-2xl p-8 shadow-2xl">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-                QR Architect
-            </h1>
-            <p class="text-slate-400 mt-2 text-sm">Generate secure & scannable QR codes</p>
-        </div>
-
-        <div class="space-y-6">
-            <!-- Input -->
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Content</label>
-                <textarea id="text-input" 
-                    placeholder="Enter URL or text here..." 
-                    class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all h-24 resize-none"
-                >https://google.com</textarea>
-            </div>
-
-            <!-- Settings -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Size</label>
-                    <select id="size-input" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none">
-                        <option value="128">Small (128px)</option>
-                        <option value="256" selected>Medium (256px)</option>
-                        <option value="512">Large (512px)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Correction</label>
-                    <select id="error-input" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none">
-                        <option value="L">Low</option>
-                        <option value="M" selected>Medium</option>
-                        <option value="Q">Quartile</option>
-                        <option value="H">High</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Action -->
-            <button onclick="generateQR()" class="w-full btn-primary text-white font-bold py-3 rounded-lg shadow-lg">
-                Generate QR Code
-            </button>
-
-            <!-- Result -->
-            <div id="qr-container" class="hidden flex flex-col items-center space-y-4 pt-4 border-t border-slate-700">
-                <div id="qrcode" class="p-2 rounded-lg bg-white shadow-inner"></div>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Architect Pro</title>
     <!-- Using bwip-js for professional grade QR generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bwip-js/3.0.4/bwip-js-min.js"></script>
@@ -313,6 +201,5 @@
     </script>
 </body>
 </html>
-
 
 
