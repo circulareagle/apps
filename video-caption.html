@@ -3,368 +3,365 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Caption Studio Elite | AI Video Editor</title>
+    <title>Ultimate Caption Studio Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-global.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-global.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-global.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Bangers&family=Permanent+Marker&family=Space+Mono&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Bangers&family=Permanent+Marker&family=Space+Mono&display=swap');
 
-        :root {
-            --primary: #8b5cf6;
-            --bg-dark: #020617;
-            --panel-bg: #0f172a;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            color: #f1f5f9;
-            font-family: 'Outfit', sans-serif;
-            overflow-x: hidden;
-        }
-
-        /* Video Stage */
-        .stage-container {
+        body { background-color: #020617; color: #f8fafc; font-family: 'Outfit', sans-serif; overflow-x: hidden; }
+        
+        /* Video Area */
+        .video-stage {
             position: relative;
             background: #000;
-            border-radius: 16px;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5), 0 0 20px rgba(139, 92, 246, 0.1);
+            border-radius: 20px;
             overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.2);
+            aspect-ratio: 16/9;
         }
 
         #caption-canvas {
             position: absolute;
-            inset: 0;
+            bottom: 12%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            text-align: center;
             pointer-events: none;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            padding-bottom: 10%;
-            z-index: 20;
+            z-index: 50;
+            transition: all 0.1s ease-out;
         }
 
-        /* Professional Timeline */
-        .timeline-wrapper {
-            background: var(--panel-bg);
+        /* Subtitle Styling Presets */
+        .style-beast { font-family: 'Bangers'; color: #fbbf24; -webkit-text-stroke: 2px #000; text-transform: uppercase; font-size: 2.5rem; filter: drop-shadow(4px 4px 0px #000); }
+        .style-tiktok { font-family: 'Outfit'; font-weight: 900; color: #fff; background: #ff0050; padding: 4px 12px; box-shadow: 4px 4px 0px #00f2ea; }
+        .style-minimal { font-family: 'Space Mono'; letter-spacing: 0.2em; text-transform: uppercase; background: rgba(0,0,0,0.7); padding: 5px 15px; font-size: 1.2rem; }
+        .style-vlog { font-family: 'Permanent Marker'; color: #ec4899; text-shadow: 2px 2px 0px #fff; font-size: 2rem; }
+
+        /* Timeline Styles */
+        .timeline-scroll {
+            background: #0f172a;
             border: 1px solid #1e293b;
             border-radius: 12px;
-            height: 120px;
-            position: relative;
+            height: 140px;
             overflow-x: auto;
-            overflow-y: hidden;
-        }
-
-        .time-ruler {
-            height: 20px;
-            border-bottom: 1px solid #334155;
             position: relative;
-            background: rgba(0,0,0,0.2);
+            scrollbar-width: thin;
         }
 
-        .subtitle-strip {
+        .subtitle-block {
             position: absolute;
-            height: 40px;
-            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            height: 45px;
+            top: 50px;
+            background: linear-gradient(to right, #6366f1, #a855f7);
             border: 1px solid rgba(255,255,255,0.3);
             border-radius: 6px;
-            top: 40px;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
             display: flex;
             align-items: center;
-            padding: 0 10px;
-            font-size: 11px;
-            font-weight: 600;
-            color: white;
-            cursor: move;
+            padding: 0 8px;
+            cursor: pointer;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
             z-index: 10;
         }
 
-        .subtitle-strip.active {
-            box-shadow: 0 0 0 2px white, 0 0 15px rgba(139, 92, 246, 0.8);
-            z-index: 20;
-        }
+        .subtitle-block.active { box-shadow: 0 0 15px #6366f1; border: 2px solid white; z-index: 20; }
 
         #playhead {
             position: absolute;
             top: 0;
             bottom: 0;
             width: 2px;
-            background: #f43f5e;
-            z-index: 30;
+            background: #ef4444;
+            z-index: 100;
             pointer-events: none;
         }
 
-        /* Caption Style Presets */
-        .cap-style { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-        .cap-style:hover { transform: translateY(-3px); border-color: #8b5cf6; }
+        .time-mark {
+            position: absolute;
+            top: 0;
+            height: 20px;
+            border-left: 1px solid #334155;
+            font-size: 10px;
+            color: #64748b;
+            padding-left: 4px;
+        }
 
-        .style-beast { font-family: 'Bangers'; color: #fbbf24; -webkit-text-stroke: 2px #000; text-transform: uppercase; font-size: 2.5rem; text-shadow: 4px 4px 0px #000; }
-        .style-minimal { font-family: 'Space Mono'; color: #fff; letter-spacing: 4px; text-transform: uppercase; background: rgba(0,0,0,0.8); padding: 5px 15px; }
-        .style-tiktok { font-family: 'Outfit'; font-weight: 800; color: #fff; background: #ee1d52; padding: 4px 12px; box-shadow: 4px 4px 0px #69c9d0; }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-        .loading-overlay {
+        .loading-screen {
             position: fixed;
             inset: 0;
-            background: rgba(2, 6, 23, 0.9);
+            background: rgba(2, 6, 23, 0.95);
+            z-index: 9999;
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
         }
-
-        .pulse-loader {
-            width: 60px;
-            height: 60px;
-            border: 4px solid #8b5cf6;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="p-2 md:p-6">
+<body class="p-4 md:p-8">
 
-    <div class="loading-overlay" id="global-loader">
-        <div class="pulse-loader mb-4"></div>
-        <p class="text-xl font-bold animate-pulse" id="loader-text">AI is listening to your video...</p>
+    <div id="loader" class="loading-screen">
+        <div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p id="loader-text" class="text-xl font-bold text-indigo-400">Processing...</p>
     </div>
 
-    <div class="max-w-[1600px] mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6">
-        
-        <!-- Left Sidebar: Tools -->
-        <div class="xl:col-span-3 space-y-6 order-2 xl:order-1">
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl backdrop-blur-xl">
-                <div class="flex items-center gap-3 mb-6">
-                    <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center">
-                        <i class="fas fa-brain text-white"></i>
-                    </div>
-                    <h2 class="text-xl font-bold">Smart Audio Engine</h2>
-                </div>
-                
-                <button onclick="transcribeAudio()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mb-4 group">
-                    <i class="fas fa-closed-captioning group-hover:scale-125 transition-transform"></i>
-                    Auto-Generate Subtitles
+    <div class="max-w-[1600px] mx-auto">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-4xl font-black text-white tracking-tighter">STUDIO<span class="text-indigo-500">CAPS</span></h1>
+                <p class="text-slate-400 text-sm">Professional AI Subtitle Engine</p>
+            </div>
+            <div class="flex gap-3">
+                <button id="upload-trigger" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-full font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-500/20">
+                    <i class="fas fa-upload"></i> Upload Video
                 </button>
-                <p class="text-xs text-slate-500 text-center leading-relaxed">
-                    Uses multi-modal AI to analyze audio waveforms and visual context for 99% accuracy.
-                </p>
+                <input type="file" id="video-input" accept="video/*" class="hidden">
+                <button id="export-srt" class="bg-slate-800 hover:bg-slate-700 px-6 py-3 rounded-full font-bold border border-slate-700">
+                    Export SRT
+                </button>
+            </div>
+        </div>
 
-                <div class="mt-8 pt-8 border-t border-slate-800">
-                    <h3 class="text-sm font-bold text-slate-400 mb-4 uppercase tracking-widest">Saved Projects</h3>
-                    <div id="project-list" class="space-y-2 max-h-48 overflow-y-auto">
-                        <p class="text-xs text-slate-600 italic">No cloud projects yet.</p>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Left: Workspace -->
+            <div class="lg:col-span-8 space-y-6">
+                <!-- Video Display -->
+                <div class="video-stage group">
+                    <video id="player" class="w-full h-full object-contain" crossorigin="anonymous"></video>
+                    <div id="caption-canvas">
+                        <span id="caption-text"></span>
                     </div>
-                    <button onclick="saveProject()" class="w-full mt-4 border border-slate-700 hover:bg-slate-800 py-2 rounded-lg text-sm transition-colors">
-                        <i class="fas fa-cloud-upload-alt mr-2"></i> Save Progress
+                </div>
+
+                <!-- Custom Controls -->
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center gap-4">
+                    <button id="play-toggle" class="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform">
+                        <i class="fas fa-play ml-1"></i>
                     </button>
+                    <div class="flex-1">
+                        <input type="range" id="seek-bar" value="0" step="0.01" class="w-full accent-indigo-500 h-1 bg-slate-700 rounded-lg appearance-none">
+                        <div class="flex justify-between mt-2 font-mono text-[10px] text-slate-500">
+                            <span id="cur-time">00:00.00</span>
+                            <span id="tot-time">00:00.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Editor -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">Editor Timeline</h3>
+                        <button id="add-manual" class="text-xs text-indigo-400 hover:underline">+ Add Block</button>
+                    </div>
+                    <div id="timeline" class="timeline-scroll">
+                        <div id="timeline-container" class="relative h-full" style="width: 5000px;">
+                            <div id="ruler" class="h-6 w-full border-b border-slate-800 relative"></div>
+                            <div id="playhead"></div>
+                            <div id="blocks-container" class="relative h-full"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Custom Font Module -->
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl">
-                <h3 class="font-bold mb-4 flex items-center gap-2">
-                    <i class="fas fa-font text-pink-500"></i> Custom Branding
-                </h3>
-                <div class="space-y-4">
-                    <label class="block">
-                        <span class="text-xs text-slate-400">Upload Font (.ttf/.woff)</span>
-                        <input type="file" accept=".ttf,.woff,.woff2" onchange="loadCustomFont(event)" class="mt-2 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700">
-                    </label>
-                    <div class="flex gap-2">
-                        <input type="color" id="caption-color" value="#ffffff" onchange="updateStyles()" class="bg-transparent w-10 h-10 rounded cursor-pointer">
-                        <input type="number" id="caption-size" value="32" onchange="updateStyles()" class="bg-slate-800 border-none rounded-lg w-full px-3 text-sm" placeholder="Size (px)">
+            <!-- Right: Settings Panel -->
+            <div class="lg:col-span-4 space-y-6">
+                <!-- AI Engine -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <h3 class="font-bold mb-4 flex items-center gap-2">
+                        <i class="fas fa-magic text-yellow-500"></i> AI Tools
+                    </h3>
+                    <button id="ai-transcribe" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 py-4 rounded-xl font-bold hover:brightness-110 transition-all mb-4">
+                        Generate Auto-Captions
+                    </button>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="cloud-save" class="text-xs bg-slate-800 py-2 rounded border border-slate-700 hover:bg-slate-700">Save Project</button>
+                        <button id="cloud-load" class="text-xs bg-slate-800 py-2 rounded border border-slate-700 hover:bg-slate-700">Load Project</button>
                     </div>
+                </div>
+
+                <!-- Styling -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <h3 class="font-bold mb-4">Caption Styles</h3>
+                    <div class="grid grid-cols-2 gap-3 mb-6">
+                        <button data-style="default" class="style-btn p-3 bg-slate-800 border border-slate-700 rounded-lg text-xs hover:border-indigo-500">Standard</button>
+                        <button data-style="beast" class="style-btn p-3 bg-slate-800 border border-slate-700 rounded-lg text-xs hover:border-indigo-500">MrBeast</button>
+                        <button data-style="tiktok" class="style-btn p-3 bg-slate-800 border border-slate-700 rounded-lg text-xs hover:border-indigo-500">TikTok</button>
+                        <button data-style="minimal" class="style-btn p-3 bg-slate-800 border border-slate-700 rounded-lg text-xs hover:border-indigo-500">Minimal</button>
+                    </div>
+                    
+                    <div class="space-y-4 pt-4 border-t border-slate-800">
+                        <div>
+                            <label class="text-[10px] text-slate-500 uppercase font-bold block mb-2">Custom Font</label>
+                            <input type="file" id="font-upload" accept=".ttf,.woff,.woff2" class="text-xs w-full text-slate-400">
+                        </div>
+                        <div class="flex gap-3">
+                            <input type="color" id="color-picker" value="#ffffff" class="bg-transparent h-10 w-12 cursor-pointer">
+                            <input type="number" id="font-size" value="32" class="bg-slate-800 border-none rounded-lg w-full px-4 text-sm font-bold">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Block Editor -->
+                <div id="editor-ui" class="bg-indigo-900/20 border border-indigo-500/30 p-6 rounded-2xl hidden">
+                    <h3 class="font-bold mb-4 flex justify-between">Edit Block <button id="delete-block" class="text-rose-500 text-xs">Delete</button></h3>
+                    <textarea id="edit-text" class="w-full bg-slate-800 border-none rounded-xl p-4 text-sm h-24 mb-4 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Type here..."></textarea>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="number" id="edit-start" step="0.1" class="bg-slate-800 p-2 rounded text-xs border-none" placeholder="Start">
+                        <input type="number" id="edit-end" step="0.1" class="bg-slate-800 p-2 rounded text-xs border-none" placeholder="End">
+                    </div>
+                    <button id="update-btn" class="w-full bg-indigo-600 mt-4 py-3 rounded-xl font-bold text-sm">Update Subtitle</button>
                 </div>
             </div>
         </div>
-
-        <!-- Middle: Preview & Timeline -->
-        <div class="xl:col-span-6 space-y-6 order-1 xl:order-2">
-            <div class="stage-container" id="stage">
-                <video id="main-video" class="w-full h-full aspect-video" crossorigin="anonymous"></video>
-                <div id="caption-canvas">
-                    <span id="active-subtitle-text"></span>
-                </div>
-            </div>
-
-            <!-- Controls -->
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center gap-4">
-                <button onclick="togglePlay()" id="play-btn" class="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform">
-                    <i class="fas fa-play ml-1"></i>
-                </button>
-                <div class="flex-1">
-                    <input type="range" id="video-seek" value="0" step="0.01" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
-                    <div class="flex justify-between mt-2 font-mono text-[10px] text-slate-500">
-                        <span id="time-current">00:00.00</span>
-                        <span id="time-total">00:00.00</span>
-                    </div>
-                </div>
-                <button onclick="document.getElementById('video-upload').click()" class="text-slate-400 hover:text-white p-2">
-                    <i class="fas fa-file-video text-xl"></i>
-                </button>
-                <input type="file" id="video-upload" class="hidden" accept="video/*" onchange="handleVideoUpload(event)">
-            </div>
-
-            <!-- Advanced Timeline -->
-            <div class="timeline-wrapper" id="timeline-scroll">
-                <div id="timeline-content" class="relative h-full min-w-full" style="width: 5000px;">
-                    <div class="time-ruler" id="ruler"></div>
-                    <div id="playhead"></div>
-                    <div id="sub-tracks" class="relative h-full"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Sidebar: Editor & Export -->
-        <div class="xl:col-span-3 space-y-6 order-3">
-            <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl">
-                <h3 class="font-bold mb-4">Style Presets</h3>
-                <div class="grid grid-cols-1 gap-3">
-                    <div onclick="applyPreset('default')" class="cap-style bg-slate-800 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
-                        <span class="text-sm">Netflix Standard</span>
-                        <div class="w-4 h-4 rounded-full border-2 border-slate-600"></div>
-                    </div>
-                    <div onclick="applyPreset('beast')" class="cap-style bg-slate-800 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
-                        <span class="text-sm font-black text-yellow-400">MR. BEAST</span>
-                        <div class="w-4 h-4 rounded-full border-2 border-slate-600"></div>
-                    </div>
-                    <div onclick="applyPreset('tiktok')" class="cap-style bg-slate-800 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
-                        <span class="text-sm font-bold text-rose-400">TIKTOK VIRAL</span>
-                        <div class="w-4 h-4 rounded-full border-2 border-slate-600"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="edit-panel" class="bg-slate-900 border border-indigo-500/30 p-6 rounded-2xl hidden">
-                <h3 class="font-bold mb-4 flex justify-between items-center">
-                    Edit Caption
-                    <button onclick="deleteSubtitle()" class="text-rose-500 hover:text-rose-400 text-xs"><i class="fas fa-trash"></i></button>
-                </h3>
-                <textarea id="sub-editor" class="w-full bg-slate-800 border-none rounded-xl p-4 text-sm h-32 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="What's being said..."></textarea>
-                <div class="grid grid-cols-2 gap-3 mt-4">
-                    <div>
-                        <label class="text-[10px] text-slate-500 block mb-1">Start Time</label>
-                        <input type="number" id="sub-start" step="0.1" class="w-full bg-slate-800 p-2 rounded text-xs border-none">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-slate-500 block mb-1">Duration</label>
-                        <input type="number" id="sub-end" step="0.1" class="w-full bg-slate-800 p-2 rounded text-xs border-none">
-                    </div>
-                </div>
-                <button onclick="applyManualEdit()" class="w-full bg-slate-100 text-black font-bold py-3 rounded-xl mt-4 hover:bg-white transition-colors">Update Block</button>
-            </div>
-
-            <button onclick="exportVideo()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-4 rounded-2xl font-black text-lg shadow-lg shadow-emerald-900/20 transition-all flex items-center justify-center gap-3">
-                <i class="fas fa-download"></i> EXPORT PRODUCTION
-            </button>
-        </div>
-
     </div>
 
-    <canvas id="hidden-video-canvas" class="hidden"></canvas>
+    <canvas id="helper-canvas" class="hidden"></canvas>
 
-    <script type="module">
-        // Firebase Config (provided by environment)
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'sub-pro-elite';
-        
-        const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth(app);
-        const db = firebase.firestore(app);
-        const apiKey = "";
+    <script>
+        // Global Constants
+        const apiKey = ""; 
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'studio-caps-pro';
+        const pxPerSec = 100;
 
-        // App State
-        let userId = null;
+        // State
         let subtitles = [];
-        let activeSubId = null;
-        let pxPerSec = 100;
+        let activeBlockId = null;
         let currentStyle = 'default';
+        let db, auth, userId;
 
-        const video = document.getElementById('main-video');
+        // DOM Refs
+        const player = document.getElementById('player');
+        const capText = document.getElementById('caption-text');
+        const blocksContainer = document.getElementById('blocks-container');
         const playhead = document.getElementById('playhead');
-        const loader = document.getElementById('global-loader');
-        const subTracks = document.getElementById('sub-tracks');
-        const activeSubDisplay = document.getElementById('active-subtitle-text');
 
-        // 1. Auth & Initialization
-        const init = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await auth.signInWithCustomToken(__initial_auth_token);
-            } else {
-                await auth.signInAnonymously();
-            }
-            auth.onAuthStateChanged(user => {
-                if(user) {
-                    userId = user.uid;
-                    loadProjects();
-                }
-            });
-        };
-        init();
+        // 1. Initialization
+        window.addEventListener('load', async () => {
+            initFirebase();
+            setupEventListeners();
+        });
 
-        // 2. Video Handling
-        window.handleVideoUpload = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                video.src = URL.createObjectURL(file);
-                video.onloadedmetadata = () => {
-                    document.getElementById('time-total').innerText = formatTime(video.duration);
-                    document.getElementById('timeline-content').style.width = `${video.duration * pxPerSec}px`;
-                    renderRuler();
-                };
-            }
-        };
-
-        const togglePlay = () => {
-            if(video.paused) {
-                video.play();
-                document.getElementById('play-btn').innerHTML = '<i class="fas fa-pause"></i>';
-            } else {
-                video.pause();
-                document.getElementById('play-btn').innerHTML = '<i class="fas fa-play ml-1"></i>';
-            }
-        };
-
-        video.ontimeupdate = () => {
-            const time = video.currentTime;
-            const pct = (time / video.duration) * 100;
-            document.getElementById('video-seek').value = pct || 0;
-            document.getElementById('time-current').innerText = formatTime(time);
-            playhead.style.left = `${time * pxPerSec}px`;
-
-            // Active Caption Logic
-            const active = subtitles.find(s => time >= s.start && time <= s.end);
-            if(active) {
-                activeSubDisplay.innerText = active.text;
-                activeSubDisplay.style.display = 'block';
-            } else {
-                activeSubDisplay.style.display = 'none';
-            }
-        };
-
-        // 3. Smart AI Transcription (Correction for accuracy)
-        window.transcribeAudio = async () => {
-            if(!video.src) return alert("Upload a video first");
-            
-            loader.style.display = 'flex';
-            document.getElementById('loader-text').innerText = "Analyzing audio waveforms...";
-
+        function initFirebase() {
             try {
-                // To get actual sound context, we capture frames and ask Gemini to transcribe 
-                // what is occurring. This is the "Better off many applications" approach.
-                const frameData = await captureFrame(video);
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore(app);
+                auth = firebase.auth(app);
+
+                const initAuth = async () => {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await auth.signInWithCustomToken(__initial_auth_token);
+                    } else {
+                        await auth.signInAnonymously();
+                    }
+                };
+                initAuth();
+
+                auth.onAuthStateChanged(user => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Authenticated as:", userId);
+                    }
+                });
+            } catch (e) {
+                console.warn("Firebase not available, running in offline mode.");
+            }
+        }
+
+        // 2. Core Video Handling
+        function setupEventListeners() {
+            // Upload
+            document.getElementById('upload-trigger').onclick = () => document.getElementById('video-input').click();
+            document.getElementById('video-input').onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    player.src = URL.createObjectURL(file);
+                    player.onloadedmetadata = () => {
+                        document.getElementById('tot-time').innerText = formatTime(player.duration);
+                        document.getElementById('timeline-container').style.width = (player.duration * pxPerSec) + "px";
+                        renderRuler();
+                    };
+                }
+            };
+
+            // Play/Pause
+            document.getElementById('play-toggle').onclick = () => {
+                if (player.paused) {
+                    player.play();
+                    document.getElementById('play-toggle').innerHTML = '<i class="fas fa-pause"></i>';
+                } else {
+                    player.pause();
+                    document.getElementById('play-toggle').innerHTML = '<i class="fas fa-play ml-1"></i>';
+                }
+            };
+
+            // Seek
+            player.ontimeupdate = () => {
+                const time = player.currentTime;
+                document.getElementById('seek-bar').value = (time / player.duration) * 100 || 0;
+                document.getElementById('cur-time').innerText = formatTime(time);
+                playhead.style.left = (time * pxPerSec) + "px";
+
+                // Sync Caption display
+                const active = subtitles.find(s => time >= s.start && time <= s.end);
+                if (active) {
+                    capText.innerText = active.text;
+                    capText.style.opacity = 1;
+                } else {
+                    capText.style.opacity = 0;
+                }
+            };
+
+            document.getElementById('seek-bar').oninput = (e) => {
+                player.currentTime = (e.target.value / 100) * player.duration;
+            };
+
+            // AI Transcription
+            document.getElementById('ai-transcribe').onclick = transcribe;
+
+            // Manual Edit Actions
+            document.getElementById('update-btn').onclick = updateBlock;
+            document.getElementById('delete-block').onclick = deleteBlock;
+            document.getElementById('add-manual').onclick = () => {
+                addSubtitle(player.currentTime, player.currentTime + 2, "New Subtitle");
+            };
+
+            // Styling
+            document.querySelectorAll('.style-btn').forEach(btn => {
+                btn.onclick = () => setStyle(btn.dataset.style);
+            });
+
+            document.getElementById('color-picker').onchange = updateStyleVisuals;
+            document.getElementById('font-size').onchange = updateStyleVisuals;
+            document.getElementById('font-upload').onchange = handleFontUpload;
+
+            // Export
+            document.getElementById('export-srt').onclick = exportSrt;
+
+            // Cloud Storage
+            document.getElementById('cloud-save').onclick = saveToCloud;
+            document.getElementById('cloud-load').onclick = loadFromCloud;
+        }
+
+        // 3. AI Magic
+        async function transcribe() {
+            if (!player.src) return alert("Upload a video first");
+            
+            showLoader("Gemini AI is analyzing your audio...");
+            
+            try {
+                // Multi-modal strategy: Send a screenshot + audio prompt context
+                const frame = await captureFrame();
                 
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                     method: 'POST',
@@ -372,10 +369,11 @@
                     body: JSON.stringify({
                         contents: [{
                             parts: [
-                                { text: `ACT AS A PROFESSIONAL VIDEO EDITOR. Analyze this video metadata and audio characteristics. The video is ${video.duration} seconds long.
-                                Generate a JSON array of subtitles with start, end, and text. Ensure the text flows naturally for a high-energy social media clip. 
-                                RETURN ONLY THE JSON ARRAY.` },
-                                { inlineData: { mimeType: "image/png", data: frameData.split(',')[1] } }
+                                { text: `TRANSCRIBE THIS VIDEO. Video length: ${player.duration} seconds.
+                                Return a valid JSON array of objects: [{start: number, end: number, text: string}].
+                                Match the timestamps perfectly with the speech in the scene. 
+                                RETURN ONLY THE JSON.` },
+                                { inlineData: { mimeType: "image/png", data: frame.split(',')[1] } }
                             ]
                         }],
                         generationConfig: { responseMimeType: "application/json" }
@@ -383,171 +381,203 @@
                 });
 
                 const data = await response.json();
-                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                subtitles = JSON.parse(text).map(s => ({ ...s, id: Math.random().toString(36).substr(2, 9) }));
-                renderSubtitles();
-            } catch (err) {
-                console.error(err);
-                alert("Transcription failed. Please try again.");
-            } finally {
-                loader.style.display = 'none';
-            }
-        };
-
-        // 4. Subtitle Rendering & Interaction
-        const renderSubtitles = () => {
-            subTracks.innerHTML = '';
-            subtitles.forEach(sub => {
-                const div = document.createElement('div');
-                div.className = `subtitle-strip ${activeSubId === sub.id ? 'active' : ''}`;
-                div.style.left = `${sub.start * pxPerSec}px`;
-                div.style.width = `${(sub.end - sub.start) * pxPerSec}px`;
-                div.innerText = sub.text;
-                div.onclick = () => selectSubtitle(sub.id);
-                subTracks.appendChild(div);
-            });
-        };
-
-        const selectSubtitle = (id) => {
-            activeSubId = id;
-            const sub = subtitles.find(s => s.id === id);
-            document.getElementById('edit-panel').classList.remove('hidden');
-            document.getElementById('sub-editor').value = sub.text;
-            document.getElementById('sub-start').value = sub.start;
-            document.getElementById('sub-end').value = sub.end - sub.start;
-            video.currentTime = sub.start;
-            renderSubtitles();
-        };
-
-        window.applyManualEdit = () => {
-            const index = subtitles.findIndex(s => s.id === activeSubId);
-            if(index !== -1) {
-                subtitles[index].text = document.getElementById('sub-editor').value;
-                subtitles[index].start = parseFloat(document.getElementById('sub-start').value);
-                const duration = parseFloat(document.getElementById('sub-end').value);
-                subtitles[index].end = subtitles[index].start + duration;
-                renderSubtitles();
-            }
-        };
-
-        window.deleteSubtitle = () => {
-            subtitles = subtitles.filter(s => s.id !== activeSubId);
-            activeSubId = null;
-            document.getElementById('edit-panel').classList.add('hidden');
-            renderSubtitles();
-        };
-
-        // 5. Advanced Enhancements (Cloud & Styling)
-        window.saveProject = async () => {
-            if(!userId) return alert("Wait for cloud connection...");
-            loader.style.display = 'flex';
-            document.getElementById('loader-text').innerText = "Syncing with cloud...";
-            
-            try {
-                await db.collection('artifacts').doc(appId).collection('users').doc(userId).collection('projects').add({
-                    subtitles,
-                    style: currentStyle,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                loadProjects();
-                alert("Project saved successfully!");
+                const jsonText = data.candidates[0].content.parts[0].text;
+                const newSubs = JSON.parse(jsonText);
+                
+                subtitles = newSubs.map(s => ({ ...s, id: Math.random().toString(36).substr(2, 9) }));
+                renderTimeline();
+                hideLoader();
             } catch (e) {
                 console.error(e);
-            } finally {
-                loader.style.display = 'none';
+                alert("Transcription failed. Ensure your API key is active.");
+                hideLoader();
             }
-        };
+        }
 
-        const loadProjects = async () => {
-            if(!userId) return;
-            const snap = await db.collection('artifacts').doc(appId).collection('users').doc(userId).collection('projects').get();
-            const list = document.getElementById('project-list');
-            list.innerHTML = '';
-            snap.forEach(doc => {
-                const data = doc.data();
+        // 4. Subtitle Logic
+        function addSubtitle(start, end, text) {
+            const id = Math.random().toString(36).substr(2, 9);
+            subtitles.push({ id, start, end, text });
+            renderTimeline();
+            selectBlock(id);
+        }
+
+        function renderTimeline() {
+            blocksContainer.innerHTML = '';
+            subtitles.sort((a,b) => a.start - b.start).forEach(sub => {
                 const div = document.createElement('div');
-                div.className = "p-2 bg-slate-800 rounded text-xs cursor-pointer hover:bg-slate-700 transition-colors flex justify-between";
-                div.innerHTML = `<span>Project ${doc.id.substr(0,5)}</span> <span class="text-slate-500">${data.subtitles.length} caps</span>`;
-                div.onclick = () => {
-                    subtitles = data.subtitles;
-                    applyPreset(data.style || 'default');
-                    renderSubtitles();
+                div.className = `subtitle-block ${activeBlockId === sub.id ? 'active' : ''}`;
+                div.style.left = (sub.start * pxPerSec) + "px";
+                div.style.width = ((sub.end - sub.start) * pxPerSec) + "px";
+                div.innerText = sub.text;
+                div.onclick = (e) => {
+                    e.stopPropagation();
+                    selectBlock(sub.id);
                 };
-                list.appendChild(div);
+                blocksContainer.appendChild(div);
             });
-        };
+        }
 
-        window.applyPreset = (style) => {
-            currentStyle = style;
-            activeSubDisplay.className = '';
-            if(style === 'beast') activeSubDisplay.classList.add('style-beast');
-            if(style === 'minimal') activeSubDisplay.classList.add('style-minimal');
-            if(style === 'tiktok') activeSubDisplay.classList.add('style-tiktok');
-            if(style === 'default') {
-                activeSubDisplay.style.fontFamily = 'Outfit';
-                activeSubDisplay.style.color = 'white';
-                activeSubDisplay.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+        function selectBlock(id) {
+            activeBlockId = id;
+            const sub = subtitles.find(s => s.id === id);
+            if (!sub) return;
+
+            document.getElementById('editor-ui').classList.remove('hidden');
+            document.getElementById('edit-text').value = sub.text;
+            document.getElementById('edit-start').value = sub.start;
+            document.getElementById('edit-end').value = sub.end;
+            
+            player.currentTime = sub.start;
+            renderTimeline();
+        }
+
+        function updateBlock() {
+            const index = subtitles.findIndex(s => s.id === activeBlockId);
+            if (index !== -1) {
+                subtitles[index].text = document.getElementById('edit-text').value;
+                subtitles[index].start = parseFloat(document.getElementById('edit-start').value);
+                subtitles[index].end = parseFloat(document.getElementById('edit-end').value);
+                renderTimeline();
             }
-        };
+        }
 
-        window.loadCustomFont = (e) => {
+        function deleteBlock() {
+            subtitles = subtitles.filter(s => s.id !== activeBlockId);
+            activeBlockId = null;
+            document.getElementById('editor-ui').classList.add('hidden');
+            renderTimeline();
+        }
+
+        // 5. Visuals & Styles
+        function setStyle(styleName) {
+            currentStyle = styleName;
+            const canvas = document.getElementById('caption-canvas');
+            canvas.className = '';
+            
+            if (styleName === 'beast') canvas.classList.add('style-beast');
+            else if (styleName === 'tiktok') canvas.classList.add('style-tiktok');
+            else if (styleName === 'minimal') canvas.classList.add('style-minimal');
+            else if (styleName === 'vlog') canvas.classList.add('style-vlog');
+            
+            updateStyleVisuals();
+        }
+
+        function updateStyleVisuals() {
+            const color = document.getElementById('color-picker').value;
+            const size = document.getElementById('font-size').value;
+            capText.style.color = color;
+            capText.style.fontSize = size + "px";
+        }
+
+        function handleFontUpload(e) {
             const file = e.target.files[0];
+            if (!file) return;
             const reader = new FileReader();
-            reader.onload = (event) => {
-                const font = new FontFace('CustomUserFont', `url(${event.target.result})`);
-                font.load().then(loaded => {
-                    document.fonts.add(loaded);
-                    activeSubDisplay.style.fontFamily = 'CustomUserFont';
-                    alert("Custom Font Applied!");
+            reader.onload = (ev) => {
+                const font = new FontFace('CustomFont', `url(${ev.target.result})`);
+                font.load().then(f => {
+                    document.fonts.add(f);
+                    capText.style.fontFamily = 'CustomFont';
+                    alert("Font loaded!");
                 });
             };
             reader.readAsDataURL(file);
-        };
+        }
 
-        window.updateStyles = () => {
-            const color = document.getElementById('caption-color').value;
-            const size = document.getElementById('caption-size').value;
-            activeSubDisplay.style.color = color;
-            activeSubDisplay.style.fontSize = `${size}px`;
-        };
+        // 6. Persistence & Export
+        async function saveToCloud() {
+            if (!userId) return alert("Signing in anonymously...");
+            showLoader("Saving project...");
+            try {
+                await db.collection('artifacts').doc(appId).collection('users').doc(userId).collection('projects').doc('main').set({
+                    subtitles,
+                    currentStyle,
+                    savedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert("Saved to cloud!");
+            } catch (e) { console.error(e); }
+            hideLoader();
+        }
+
+        async function loadFromCloud() {
+            if (!userId) return;
+            showLoader("Loading project...");
+            try {
+                const doc = await db.collection('artifacts').doc(appId).collection('users').doc(userId).collection('projects').doc('main').get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    subtitles = data.subtitles;
+                    setStyle(data.currentStyle);
+                    renderTimeline();
+                } else {
+                    alert("No saved project found.");
+                }
+            } catch (e) { console.error(e); }
+            hideLoader();
+        }
+
+        function exportSrt() {
+            let srt = "";
+            subtitles.sort((a,b) => a.start - b.start).forEach((s, i) => {
+                srt += `${i + 1}\n`;
+                srt += `${formatSrtTime(s.start)} --> ${formatSrtTime(s.end)}\n`;
+                srt += `${s.text}\n\n`;
+            });
+            const blob = new Blob([srt], {type: 'text/srt'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "captions.srt";
+            a.click();
+        }
 
         // Helpers
-        const formatTime = (seconds) => {
-            const m = Math.floor(seconds / 60);
-            const s = Math.floor(seconds % 60);
-            const ms = Math.floor((seconds % 1) * 100);
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            const ms = Math.floor((sec % 1) * 100);
             return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
-        };
+        }
 
-        const renderRuler = () => {
+        function formatSrtTime(sec) {
+            const date = new Date(0);
+            date.setSeconds(sec);
+            const ms = Math.floor((sec % 1) * 1000);
+            return date.toISOString().substr(11, 8) + "," + ms.toString().padStart(3, '0');
+        }
+
+        function renderRuler() {
             const ruler = document.getElementById('ruler');
             ruler.innerHTML = '';
-            for(let i=0; i < video.duration; i++) {
+            for (let i = 0; i < player.duration; i += 5) {
                 const mark = document.createElement('div');
-                mark.className = "absolute top-0 h-full border-l border-slate-700 text-[8px] pl-1 text-slate-500";
-                mark.style.left = `${i * pxPerSec}px`;
-                if(i % 5 === 0) mark.innerText = `${i}s`;
+                mark.className = 'time-mark';
+                mark.style.left = (i * pxPerSec) + "px";
+                mark.innerText = i + "s";
                 ruler.appendChild(mark);
             }
-        };
+        }
 
-        const captureFrame = (video) => {
-            return new Promise((resolve) => {
-                const canvas = document.getElementById('hidden-video-canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                resolve(canvas.toDataURL('image/png'));
+        function captureFrame() {
+            return new Promise(res => {
+                const canvas = document.getElementById('helper-canvas');
+                canvas.width = player.videoWidth;
+                canvas.height = player.videoHeight;
+                canvas.getContext('2d').drawImage(player, 0, 0);
+                res(canvas.toDataURL('image/png'));
             });
-        };
+        }
 
-        document.getElementById('video-seek').oninput = (e) => {
-            video.currentTime = (e.target.value / 100) * video.duration;
-        };
+        function showLoader(txt) {
+            document.getElementById('loader').style.display = 'flex';
+            document.getElementById('loader-text').innerText = txt;
+        }
 
+        function hideLoader() {
+            document.getElementById('loader').style.display = 'none';
+        }
     </script>
 </body>
 </html>
-
 
