@@ -7,19 +7,19 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Bangers&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Bangers&family=Permanent+Marker&family=Courier+Prime:wght@700&display=swap');
         
         body { background-color: #020617; color: #f8fafc; font-family: 'Outfit', sans-serif; margin: 0; overflow-x: hidden; user-select: none; }
         
         /* Video & Canvas Area */
-        .preview-box { position: sticky; top: 0; z-index: 50; background: #000; width: 100%; aspect-ratio: 9/16; max-height: 60vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        video { display: none; } /* Hidden, we draw to canvas */
-        canvas { max-width: 100%; max-height: 100%; object-fit: contain; cursor: move; }
+        .preview-box { position: sticky; top: 0; z-index: 50; background: #000; width: 100%; aspect-ratio: 9/16; max-height: 55vh; display: flex; align-items: center; justify-content: center; overflow: hidden; border-bottom: 1px solid #1e293b; }
+        video { display: none; } 
+        canvas { max-width: 100%; max-height: 100%; object-fit: contain; cursor: move; touch-action: none; }
 
         /* Timeline Styles */
         .timeline-scroll { background: #0f172a; height: 160px; overflow-x: auto; position: relative; border: 1px solid #1e293b; border-radius: 12px; margin-top: 10px; }
-        .sub-item { position: absolute; height: 40px; background: #6366f1; border: 1px solid white; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; cursor: grab; font-weight: bold; padding: 0 5px; white-space: nowrap; }
-        .sub-item:active { cursor: grabbing; opacity: 0.8; }
+        .sub-item { position: absolute; height: 40px; background: #6366f1; border: 1px solid white; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; cursor: grab; font-weight: bold; padding: 0 5px; white-space: nowrap; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .sub-item:active { cursor: grabbing; opacity: 0.8; z-index: 100; }
         .playhead-line { position: absolute; top: 0; bottom: 0; width: 2px; background: #f43f5e; z-index: 10; pointer-events: none; }
 
         /* UI */
@@ -27,26 +27,32 @@
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
         
         .btn-primary { background: linear-gradient(to right, #6366f1, #a855f7); padding: 16px; border-radius: 16px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; width: 100%; }
-        .btn-secondary { background: #1e293b; padding: 12px; border-radius: 12px; font-size: 12px; font-weight: bold; width: 100%; }
+        .btn-secondary { background: #1e293b; padding: 12px; border-radius: 12px; font-size: 12px; font-weight: bold; width: 100%; border: 1px solid #334155; }
+        
+        .style-btn { padding: 6px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; border: 1px solid #334155; background: #0f172a; cursor: pointer; white-space: nowrap; }
+        .style-btn.active { background: #6366f1; border-color: #818cf8; }
+
+        .key-badge { font-size: 10px; padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .key-missing { background: #ef4444; color: white; }
+        .key-saved { background: #22c55e; color: white; }
     </style>
 </head>
 <body class="pb-10">
 
     <div id="loader" class="loader">
         <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p class="font-black italic text-xl">AI SYNCING WORDS...</p>
-        <p class="text-slate-500 text-xs mt-2">Breaking audio into precise timestamps</p>
+        <p id="loader-status" class="font-black italic text-xl uppercase">AI Syncing...</p>
     </div>
 
     <div id="edit-modal" class="modal">
         <div class="bg-slate-900 p-6 rounded-2xl w-full max-w-sm border border-slate-800">
-            <h3 class="font-black mb-3">EDIT TEXT</h3>
-            <input type="text" id="edit-input" class="w-full bg-slate-800 p-3 rounded-lg mb-4 text-white outline-none border border-indigo-500/50">
+            <h3 class="font-black mb-3 uppercase text-indigo-400">Edit Caption</h3>
+            <input type="text" id="edit-input" class="w-full bg-slate-800 p-3 rounded-lg mb-4 text-white outline-none border border-indigo-500/30">
             <div class="flex gap-2">
                 <button onclick="confirmEdit()" class="flex-1 bg-indigo-600 py-3 rounded-xl font-bold">Save</button>
                 <button onclick="deleteSub()" class="flex-1 bg-rose-600 py-3 rounded-xl font-bold">Delete</button>
             </div>
-            <button onclick="closeModal()" class="w-full mt-4 text-slate-500 text-xs">Cancel</button>
+            <button onclick="closeModal()" class="w-full mt-4 text-slate-500 text-xs font-bold uppercase">Cancel</button>
         </div>
     </div>
 
@@ -58,7 +64,16 @@
     <div class="p-4 space-y-4 max-w-xl mx-auto">
         <div class="flex justify-between items-center">
             <h1 class="text-xl font-black italic">STUDIO<span class="text-indigo-500">CAPS</span></h1>
-            <button onclick="localStorage.removeItem('gemini_api_key'); location.reload();" class="text-[10px] text-slate-500 underline font-bold">Reset Key</button>
+            <div id="key-indicator" class="key-badge key-missing" onclick="promptKey()">
+                <i class="fas fa-key mr-1"></i> SET API KEY
+            </div>
+        </div>
+
+        <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar" id="style-bar">
+            <button class="style-btn active" onclick="changeStyle('classic', this)">CLASSIC</button>
+            <button class="style-btn" onclick="changeStyle('impact', this)">IMPACT</button>
+            <button class="style-btn" onclick="changeStyle('neon', this)">NEON</button>
+            <button class="style-btn" onclick="changeStyle('typewriter', this)">RETRO</button>
         </div>
 
         <div class="grid grid-cols-2 gap-2">
@@ -79,14 +94,13 @@
         </div>
 
         <button id="ai-btn" class="btn-primary flex items-center justify-center gap-2">
-            <i class="fas fa-bolt"></i> Generate Precision Captions
+            <i class="fas fa-bolt"></i> Generate AI Captions
         </button>
 
-        <div class="timeline-scroll" id="timeline-container">
+        <div class="timeline-scroll" id="timeline-scroll">
             <div id="playhead" class="playhead-line"></div>
             <div id="tracks" class="relative h-full"></div>
         </div>
-        <p class="text-center text-[10px] text-slate-500 font-bold uppercase italic">Drag blocks to sync • Tap to edit • Drag text on video to move</p>
     </div>
 
     <script>
@@ -95,20 +109,46 @@
         const ctx = canvas.getContext('2d');
         const tracks = document.getElementById('tracks');
         const playhead = document.getElementById('playhead');
+        const timeline = document.getElementById('timeline-scroll');
         
         let captions = [];
-        let captionY = 0.8; // Vertical position (0 to 1)
+        let captionY = 0.75;
         let dragTarget = null;
         let editingId = null;
         let isExporting = false;
+        let currentStyle = 'classic';
 
-        // Initialize API Key
-        if(!localStorage.getItem('gemini_api_key')) {
-            const key = prompt("Please enter your Gemini API Key:");
-            if(key) localStorage.setItem('gemini_api_key', key);
+        // API Key Management
+        function updateKeyUI() {
+            const indicator = document.getElementById('key-indicator');
+            if (localStorage.getItem('gemini_api_key')) {
+                indicator.className = 'key-badge key-saved';
+                indicator.innerHTML = '<i class="fas fa-check-circle mr-1"></i> KEY SAVED';
+            } else {
+                indicator.className = 'key-badge key-missing';
+                indicator.innerHTML = '<i class="fas fa-key mr-1"></i> SET API KEY';
+            }
         }
 
-        // File Loading
+        function promptKey() {
+            const key = prompt("Enter Gemini API Key (get one at aistudio.google.com):", localStorage.getItem('gemini_api_key') || "");
+            if (key) {
+                localStorage.setItem('gemini_api_key', key);
+                updateKeyUI();
+            }
+        }
+
+        // Initial check
+        updateKeyUI();
+        if (!localStorage.getItem('gemini_api_key')) promptKey();
+
+        function changeStyle(s, el) {
+            currentStyle = s;
+            document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            drawFrame();
+        }
+
         document.getElementById('vid-file').onchange = (e) => {
             const file = e.target.files[0];
             if(file) {
@@ -118,14 +158,13 @@
                     canvas.height = video.videoHeight;
                     document.getElementById('time-tot').innerText = formatTime(video.duration);
                     tracks.style.width = (video.duration * 100) + 'px';
-                    requestAnimationFrame(drawFrame);
+                    drawFrame();
                 };
             }
         };
 
-        // UI Controls
         document.getElementById('play-btn').onclick = () => {
-            if(video.paused) { video.play(); document.getElementById('play-btn').innerHTML = '<i class="fas fa-pause"></i>'; }
+            if(video.paused) { video.play(); document.getElementById('play-btn').innerHTML = '<i class="fas fa-pause"></i>'; requestAnimationFrame(drawFrame); }
             else { video.pause(); document.getElementById('play-btn').innerHTML = '<i class="fas fa-play"></i>'; }
         };
 
@@ -139,36 +178,58 @@
 
         document.getElementById('seek-bar').oninput = (e) => {
             video.currentTime = (e.target.value / 100) * video.duration;
+            drawFrame();
         };
 
-        // Main Draw Loop
         function drawFrame() {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
             const now = video.currentTime;
             const cap = captions.find(c => now >= c.start && now <= c.end);
             
             if(cap) {
-                ctx.font = `bold ${canvas.width * 0.06}px Outfit`;
-                ctx.textAlign = 'center';
-                ctx.fillStyle = 'white';
-                ctx.strokeStyle = 'black';
-                ctx.lineWidth = canvas.width * 0.01;
-                
                 const x = canvas.width / 2;
                 const y = canvas.height * captionY;
-                
-                ctx.strokeText(cap.text.toUpperCase(), x, y);
-                ctx.fillText(cap.text.toUpperCase(), x, y);
+                const txt = cap.text.toUpperCase();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                if(currentStyle === 'classic') {
+                    ctx.font = `bold ${canvas.width * 0.06}px Outfit`;
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = canvas.width * 0.012;
+                    ctx.strokeText(txt, x, y);
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(txt, x, y);
+                } else if(currentStyle === 'impact') {
+                    ctx.font = `900 ${canvas.width * 0.09}px Bangers`;
+                    ctx.fillStyle = '#fde047';
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = canvas.width * 0.015;
+                    ctx.strokeText(txt, x, y);
+                    ctx.fillText(txt, x, y);
+                } else if(currentStyle === 'neon') {
+                    ctx.font = `bold ${canvas.width * 0.07}px Outfit`;
+                    ctx.shadowColor = '#a855f7';
+                    ctx.shadowBlur = 25;
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(txt, x, y);
+                    ctx.shadowBlur = 0;
+                } else if(currentStyle === 'typewriter') {
+                    ctx.font = `bold ${canvas.width * 0.05}px "Courier Prime"`;
+                    const m = ctx.measureText(txt);
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(x - m.width/2 - 10, y - 25, m.width + 20, 50);
+                    ctx.fillStyle = '#22c55e';
+                    ctx.fillText(txt, x, y);
+                }
             }
             if(!video.paused || isExporting) requestAnimationFrame(drawFrame);
         }
 
-        // AI Logic
         document.getElementById('ai-btn').onclick = async () => {
             const file = document.getElementById('vid-file').files[0];
             const key = localStorage.getItem('gemini_api_key');
-            if(!file || !key) return alert("Missing video or API key");
+            if(!file || !key) return promptKey();
 
             document.getElementById('loader').style.display = 'flex';
             
@@ -182,7 +243,7 @@
                         body: JSON.stringify({
                             contents: [{
                                 parts: [
-                                    { text: "Transcribe this video into VERY SHORT word phrases (max 4 words per segment). Timestamps must be precise to the speech. Format: JSON array [{\"start\": float, \"end\": float, \"text\": string}]." },
+                                    { text: "Transcribe this. VERY SHORT word segments (max 3 words). Exact timestamps. Output JSON: [{\"start\": float, \"end\": float, \"text\": string}]." },
                                     { inlineData: { mimeType: file.type, data: base64 } }
                                 ]
                             }],
@@ -197,65 +258,72 @@
                     document.getElementById('loader').style.display = 'none';
                 };
             } catch (err) {
-                alert("AI error. Try a shorter clip.");
+                alert("Check API Key or video size.");
                 document.getElementById('loader').style.display = 'none';
             }
         };
 
-        // Timeline Management
         function renderTimeline() {
             tracks.querySelectorAll('.sub-item').forEach(e => e.remove());
             captions.forEach((c, idx) => {
                 const div = document.createElement('div');
                 div.className = 'sub-item';
                 div.style.left = (c.start * 100) + 'px';
-                div.style.width = ((c.end - c.start) * 100) + 'px';
+                div.style.width = Math.max(20, (c.end - c.start) * 100) + 'px';
                 div.style.top = (10 + (idx % 3) * 45) + 'px';
                 div.innerText = c.text;
                 
-                // Drag to Sync
                 div.onmousedown = (e) => {
-                    dragTarget = { id: c.id, offset: e.clientX - (c.start * 100) };
+                    e.stopPropagation();
+                    const rect = div.getBoundingClientRect();
+                    dragTarget = { id: c.id, offset: e.clientX - rect.left };
                 };
                 
-                // Tap to Edit
                 div.onclick = (e) => {
-                    if(Math.abs(e.movementX) > 2) return;
                     editingId = c.id;
                     document.getElementById('edit-input').value = c.text;
                     document.getElementById('edit-modal').style.display = 'flex';
                 };
-                
                 tracks.appendChild(div);
             });
         }
 
         window.onmousemove = (e) => {
             if(!dragTarget) return;
-            const containerLeft = document.getElementById('timeline-scroll').getBoundingClientRect().left;
-            const newStart = (e.clientX - dragTarget.offset) / 100;
+            const containerRect = timeline.getBoundingClientRect();
+            const newX = (e.clientX - containerRect.left + timeline.scrollLeft) - dragTarget.offset;
+            const newStart = Math.max(0, newX / 100);
             const cap = captions.find(c => c.id === dragTarget.id);
-            const duration = cap.end - cap.start;
-            cap.start = Math.max(0, newStart);
-            cap.end = cap.start + duration;
-            renderTimeline();
+            if(cap) {
+                const dur = cap.end - cap.start;
+                cap.start = newStart;
+                cap.end = newStart + dur;
+                renderTimeline();
+            }
         };
 
         window.onmouseup = () => { dragTarget = null; };
 
-        // Caption Position Drag
-        canvas.ontouchmove = canvas.onmousemove = (e) => {
-            if(e.buttons !== 1 && !e.touches) return;
+        canvas.onmousedown = canvas.ontouchstart = (e) => {
             const rect = canvas.getBoundingClientRect();
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            captionY = (clientY - rect.top) / rect.height;
+            const onMove = (me) => {
+                const cy = me.touches ? me.touches[0].clientY : me.clientY;
+                captionY = Math.max(0.1, Math.min(0.9, (cy - rect.top) / rect.height));
+                if(video.paused) drawFrame();
+            };
+            const onUp = () => {
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('touchmove', onMove);
+            };
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('touchmove', onMove);
+            window.addEventListener('mouseup', onUp);
+            window.addEventListener('touchend', onUp);
         };
 
-        // Edit Actions
         function confirmEdit() {
             const c = captions.find(x => x.id === editingId);
-            c.text = document.getElementById('edit-input').value;
-            renderTimeline();
+            if(c) { c.text = document.getElementById('edit-input').value; renderTimeline(); }
             closeModal();
         }
         function deleteSub() {
@@ -266,14 +334,15 @@
         function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
         function formatTime(s) { return Math.floor(s/60) + ":" + Math.floor(s%60).toString().padStart(2,'0'); }
 
-        // EXPORT ENGINE
         document.getElementById('export-btn').onclick = async () => {
-            if(!captions.length) return alert("No captions to export!");
+            if(!captions.length) return alert("Generate captions first!");
             isExporting = true;
-            
+            document.getElementById('loader').style.display = 'flex';
+            document.getElementById('loader-status').innerText = "Exporting MP4...";
+
+            const chunks = [];
             const stream = canvas.captureStream(30);
             const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
-            const chunks = [];
             
             recorder.ondataavailable = e => chunks.push(e.data);
             recorder.onstop = () => {
@@ -283,19 +352,13 @@
                 a.download = "StudioCaps_Export.mp4";
                 a.click();
                 isExporting = false;
+                document.getElementById('loader').style.display = 'none';
             };
 
             video.currentTime = 0;
             video.play();
             recorder.start();
-            
-            document.getElementById('loader').style.display = 'flex';
-            document.querySelector('#loader p').innerText = "RENDERING VIDEO...";
-
-            video.onended = () => {
-                recorder.stop();
-                document.getElementById('loader').style.display = 'none';
-            };
+            video.onended = () => recorder.stop();
         };
     </script>
 </body>
