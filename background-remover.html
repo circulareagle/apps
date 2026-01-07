@@ -38,6 +38,7 @@
             max-width: 100%;
             height: auto;
             border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
         
         .drop-zone--over {
@@ -74,16 +75,19 @@
                             </select>
                         </div>
 
-                        <!-- Color Picker (Hidden by default) -->
+                        <!-- Color Picker -->
                         <div id="colorPickerContainer" class="hidden">
                             <label class="block text-sm font-medium text-slate-700 mb-2">Pick Color</label>
-                            <input type="color" id="bgColor" value="#ffffff" class="w-full h-10 rounded-lg cursor-pointer border-none p-0">
+                            <div class="flex gap-2 items-center">
+                                <input type="color" id="bgColor" value="#3b82f6" class="w-12 h-10 rounded-lg cursor-pointer border border-slate-200 p-1 bg-white">
+                                <input type="text" id="colorHex" value="#3b82f6" class="flex-1 p-2 text-sm border border-slate-300 rounded-lg uppercase">
+                            </div>
                         </div>
 
-                        <!-- Custom Image Upload (Hidden by default) -->
+                        <!-- Custom Image Upload -->
                         <div id="customBgContainer" class="hidden">
                             <label class="block text-sm font-medium text-slate-700 mb-2">Background Image</label>
-                            <input type="file" id="bgImageInput" accept="image/*" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            <input type="file" id="bgImageInput" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                         </div>
 
                         <hr class="border-slate-100">
@@ -116,8 +120,8 @@
                     </div>
                 </div>
 
-                <!-- Preview Area (Hidden until image uploaded) -->
-                <div id="previewArea" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Preview Area -->
+                <div id="previewArea" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
                         <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Original</span>
                         <div class="bg-slate-200 rounded-xl overflow-hidden aspect-square flex items-center justify-center">
@@ -126,11 +130,11 @@
                     </div>
                     <div class="space-y-2">
                         <span class="text-xs font-bold text-blue-500 uppercase tracking-wider">Result</span>
-                        <div id="canvasWrapper" class="relative bg-white rounded-xl overflow-hidden aspect-square flex items-center justify-center checkerboard">
+                        <div id="canvasWrapper" class="relative bg-white rounded-xl overflow-hidden aspect-square flex items-center justify-center checkerboard border border-slate-100">
                             <!-- Loading Overlay -->
                             <div id="processingLoader" class="hidden absolute inset-0 bg-white/80 z-10 flex flex-col items-center justify-center">
                                 <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-12 w-12 mb-4"></div>
-                                <p class="text-slate-900 font-medium">Processing Image...</p>
+                                <p class="text-slate-900 font-medium">AI is thinking...</p>
                             </div>
                             <canvas id="outputCanvas"></canvas>
                         </div>
@@ -138,19 +142,13 @@
                 </div>
             </div>
         </main>
-
-        <footer class="mt-12 text-center text-slate-400 text-sm">
-            Powered by MediaPipe AI &bull; Private & Secure
-        </footer>
     </div>
-
-    <!-- Hidden Video for Processing -->
-    <video id="hiddenVideo" class="hidden" playsinline></video>
 
     <script>
         const imageInput = document.getElementById('imageInput');
         const bgType = document.getElementById('bgType');
         const bgColor = document.getElementById('bgColor');
+        const colorHex = document.getElementById('colorHex');
         const bgImageInput = document.getElementById('bgImageInput');
         const downloadBtn = document.getElementById('downloadBtn');
         const outputCanvas = document.getElementById('outputCanvas');
@@ -163,15 +161,18 @@
         let selfieSegmentation;
         let originalImageBitmap = null;
         let customBgImage = null;
+        
+        // Offscreen canvas for person extraction
+        const offscreenCanvas = document.createElement('canvas');
+        const offscreenCtx = offscreenCanvas.getContext('2d');
 
-        // Initialize MediaPipe
         async function initAI() {
             selfieSegmentation = new SelfieSegmentation({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
             });
 
             selfieSegmentation.setOptions({
-                modelSelection: 1, // 0 for general, 1 for landscape/optimized
+                modelSelection: 1, // 1 for better quality
             });
 
             selfieSegmentation.onResults(onResults);
@@ -179,7 +180,7 @@
 
         initAI();
 
-        // UI Controls
+        // Settings Toggles
         bgType.addEventListener('change', () => {
             document.getElementById('colorPickerContainer').classList.toggle('hidden', bgType.value !== 'color');
             document.getElementById('customBgContainer').classList.toggle('hidden', bgType.value !== 'image');
@@ -189,11 +190,21 @@
             } else {
                 canvasWrapper.classList.remove('checkerboard');
             }
-            
             processImage();
         });
 
-        bgColor.addEventListener('input', processImage);
+        bgColor.addEventListener('input', (e) => {
+            colorHex.value = e.target.value;
+            processImage();
+        });
+
+        colorHex.addEventListener('input', (e) => {
+            if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+                bgColor.value = e.target.value;
+                processImage();
+            }
+        });
+
         bgImageInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -210,34 +221,19 @@
             }
         });
 
-        // Image Input Handler
         imageInput.addEventListener('change', handleFileSelect);
 
-        // Drag and Drop
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-        });
+        // Drag & Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(n => dropZone.addEventListener(n, e => {
+            e.preventDefault(); e.stopPropagation();
+        }));
 
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.add('drop-zone--over'), false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drop-zone--over'), false);
-        });
+        ['dragenter', 'dragover'].forEach(n => dropZone.addEventListener(n, () => dropZone.classList.add('drop-zone--over')));
+        ['dragleave', 'drop'].forEach(n => dropZone.addEventListener(n, () => dropZone.classList.remove('drop-zone--over')));
 
         dropZone.addEventListener('drop', (e) => {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            if (files.length) {
-                imageInput.files = files;
-                handleFileSelect({ target: { files } });
-            }
+            const files = e.dataTransfer.files;
+            if (files.length) handleFileSelect({ target: { files } });
         });
 
         async function handleFileSelect(e) {
@@ -246,8 +242,7 @@
 
             loader.classList.remove('hidden');
             previewArea.classList.remove('hidden');
-            dropZone.classList.add('py-6'); // Compact drop zone
-            document.getElementById('uploadPlaceholder').querySelector('h3').innerText = "Change Image";
+            dropZone.querySelector('h3').innerText = "Change Image";
 
             const reader = new FileReader();
             reader.onload = (event) => {
@@ -255,9 +250,10 @@
                 const img = new Image();
                 img.onload = async () => {
                     originalImageBitmap = img;
-                    // Reset canvas size
                     outputCanvas.width = img.width;
                     outputCanvas.height = img.height;
+                    offscreenCanvas.width = img.width;
+                    offscreenCanvas.height = img.height;
                     await processImage();
                 };
                 img.src = event.target.result;
@@ -274,33 +270,18 @@
         function onResults(results) {
             const ctx = outputCanvas.getContext('2d');
             
-            ctx.save();
+            // 1. Prepare the foreground (person) on offscreen canvas
+            offscreenCtx.save();
+            offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+            offscreenCtx.drawImage(results.segmentationMask, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+            offscreenCtx.globalCompositeOperation = 'source-in';
+            offscreenCtx.drawImage(results.image, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+            offscreenCtx.restore();
+
+            // 2. Draw everything to the main canvas
             ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
             
-            // Draw background based on selection
-            if (bgType.value === 'color') {
-                ctx.fillStyle = bgColor.value;
-                ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
-            } else if (bgType.value === 'image' && customBgImage) {
-                // Draw background image scaled to cover
-                const scale = Math.max(outputCanvas.width / customBgImage.width, outputCanvas.height / customBgImage.height);
-                const x = (outputCanvas.width - customBgImage.width * scale) / 2;
-                const y = (outputCanvas.height - customBgImage.height * scale) / 2;
-                ctx.drawImage(customBgImage, x, y, customBgImage.width * scale, customBgImage.height * scale);
-            }
-
-            // Draw the mask to the canvas
-            ctx.drawImage(results.segmentationMask, 0, 0, outputCanvas.width, outputCanvas.height);
-
-            // Use 'source-in' to keep only the part of the original image that matches the mask
-            ctx.globalCompositeOperation = 'source-in';
-            ctx.drawImage(results.image, 0, 0, outputCanvas.width, outputCanvas.height);
-            
-            // Restore context for background drawing
-            ctx.globalCompositeOperation = 'destination-over';
-            
-            // If we have a background color or image, it was already drawn above
-            // but for transparent mode we need to make sure nothing is behind
+            // Draw Background First
             if (bgType.value === 'color') {
                 ctx.fillStyle = bgColor.value;
                 ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
@@ -311,7 +292,8 @@
                 ctx.drawImage(customBgImage, x, y, customBgImage.width * scale, customBgImage.height * scale);
             }
 
-            ctx.restore();
+            // Draw the extracted foreground on top
+            ctx.drawImage(offscreenCanvas, 0, 0);
             
             loader.classList.add('hidden');
             downloadBtn.disabled = false;
@@ -319,7 +301,7 @@
 
         downloadBtn.addEventListener('click', () => {
             const link = document.createElement('a');
-            link.download = 'removed-background.png';
+            link.download = 'ai-bg-remover-result.png';
             link.href = outputCanvas.toDataURL('image/png');
             link.click();
         });
