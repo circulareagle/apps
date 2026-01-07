@@ -1,150 +1,350 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>All‑in‑One Video Caption & Subtitle Studio</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />  <!-- Tailwind -->  <script src="https://cdn.tailwindcss.com"></script>  <!-- FFmpeg WASM -->  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>  <style>
-    body { background:#020617 }
-    video { max-height: 420px }
-    .overlay { position:absolute; bottom:12%; width:100%; text-align:center; pointer-events:none }
-    .word { display:inline-block; padding:0 .15em; opacity:.35; transition:all .15s }
-    .word.active { opacity:1; transform:scale(1.15) }
-  </style></head>
-<body class="text-zinc-100 p-6"><h1 class="text-3xl font-bold mb-6">Video Subtitle / Caption Generator</h1><div class="grid xl:grid-cols-2 gap-6"><!-- LEFT COLUMN --><div class="space-y-4">
-  <input id="videoInput" type="file" accept="video/*" class="block" />  <div class="relative">
-    <video id="video" controls class="w-full rounded"></video>
-    <div id="overlay" class="overlay text-3xl font-extrabold"></div>
-  </div>  <div class="bg-zinc-900 p-4 rounded">
-    <h2 class="font-semibold mb-2">Timeline Caption Editor</h2>
-    <div id="timeline" class="space-y-2 max-h-64 overflow-y-auto"></div>
-  </div>
-</div><!-- RIGHT COLUMN --><div class="space-y-4">  <button onclick="mockWhisper()" class="bg-indigo-600 px-4 py-2 rounded w-full">
-    Generate Captions (Whisper‑Ready)
-  </button>  <textarea id="fullText" rows="4" class="w-full bg-zinc-900 p-3 rounded" placeholder="Full transcript"></textarea>  <div class="grid grid-cols-2 gap-3">
-    <select id="preset" onchange="applyPreset()" class="bg-zinc-900 p-2 rounded">
-      <option value="mrbeast">MrBeast</option>
-      <option value="hormozi">Alex Hormozi</option>
-      <option value="podcast">Podcast</option>
-      <option value="meme">Meme</option>
-    </select><select id="lang" class="bg-zinc-900 p-2 rounded">
-  <option>English</option>
-  <option>Spanish</option>
-  <option>French</option>
-  <option>German</option>
-</select>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>StudioCaps Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Bangers&display=swap');
+        
+        body { 
+            background-color: #020617; 
+            color: #f8fafc; 
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
 
-  </div>  <button onclick="exportSRT()" class="bg-emerald-600 px-4 py-2 rounded w-full">
-    Export SRT
-  </button>  <button onclick="burnCaptions()" class="bg-red-600 px-4 py-2 rounded w-full">
-    Burn Captions Into Video
-  </button><a id="download" class="hidden underline text-blue-400">Download Video</a>
+        /* Fixed Video Header with Forced Visibility */
+        .video-fixed-container {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: #000;
+            width: 100%;
+            height: auto;
+            min-height: 200px; /* Prevent collapse before load */
+            aspect-ratio: 16/9;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
 
-</div>
-</div><script>
-let captions = [];
-let ffmpeg;
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+            display: block; /* Ensure it's not hidden by default */
+        }
 
-const video = document.getElementById('video');
-const overlay = document.getElementById('overlay');
-const timeline = document.getElementById('timeline');
+        #caption-overlay {
+            position: absolute;
+            bottom: 12%;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 60;
+        }
 
-/* ================= VIDEO LOAD ================= */
-document.getElementById('videoInput').onchange = e => {
-  video.src = URL.createObjectURL(e.target.files[0]);
-};
+        #caption-text {
+            color: #fff;
+            font-weight: 800;
+            font-size: 1.1rem;
+            text-align: center;
+            text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+            padding: 4px 12px;
+            max-width: 85%;
+            line-height: 1.2;
+            word-wrap: break-word;
+        }
 
-/* ================= MOCK WHISPER (NO ERRORS) ================= */
-function mockWhisper(){
-  captions = [
-    { start:0, end:2.2, text:'This caption tool is built for creators' },
-    { start:2.2, end:4.8, text:'Word by word subtitles increase retention' },
-    { start:4.8, end:7.5, text:'This works for TikTok Reels and Shorts' }
-  ];
+        .style-beast { font-family: 'Bangers'; color: #fbbf24 !important; font-size: 1.8rem !important; }
 
-  fullText.value = captions.map(c=>c.text).join(' ');
-  renderTimeline();
-}
+        .timeline-container {
+            background: #0f172a;
+            height: 80px;
+            overflow-x: auto;
+            position: relative;
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            margin-top: 8px;
+        }
 
-/* ================= TIMELINE ================= */
-function renderTimeline(){
-  timeline.innerHTML = '';
-  captions.forEach((c,i)=>{
-    timeline.innerHTML += `
-      <div class="bg-zinc-800 p-2 rounded">
-        <div class="text-xs opacity-70">${c.start}s → ${c.end}s</div>
-        <input class="w-full bg-zinc-900 p-1 mt-1" value="${c.text}"
-          onchange="captions[${i}].text=this.value">
-      </div>`;
-  });
-}
+        .sub-block {
+            position: absolute;
+            top: 15px;
+            height: 50px;
+            background: linear-gradient(to bottom right, #6366f1, #4f46e5);
+            border-radius: 8px;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
 
-/* ================= WORD‑BY‑WORD RENDER ================= */
-video.ontimeupdate = () => {
-  const t = video.currentTime;
-  const cap = captions.find(c => t >= c.start && t <= c.end);
+        .playhead {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #f43f5e;
+            z-index: 70;
+            pointer-events: none;
+        }
 
-  if(!cap){ overlay.innerHTML=''; return; }
+        .loader {
+            position: fixed;
+            inset: 0;
+            background: #020617;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 24px;
+        }
 
-  overlay.innerHTML = cap.text.split(' ').map(w =>
-    `<span class="word active">${w}</span>`
-  ).join(' ');
-};
+        @media (min-width: 1024px) {
+            .video-fixed-container {
+                position: relative;
+                border-radius: 20px;
+                margin-top: 20px;
+            }
+            #caption-text { font-size: 2.2rem; }
+        }
+    </style>
+</head>
+<body class="pb-12">
 
-/* ================= PRESETS ================= */
-function applyPreset(){
-  overlay.className = 'overlay';
+    <div id="loader" class="loader">
+        <div class="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-6"></div>
+        <p id="loader-msg" class="text-xl font-bold text-center">AI is listening...</p>
+        <p class="text-slate-400 text-sm mt-2 text-center">Transcribing audio track. Please wait.</p>
+    </div>
 
-  if(preset.value==='mrbeast')
-    overlay.classList.add('text-yellow-400','uppercase','drop-shadow-xl');
+    <div class="video-fixed-container" id="video-box">
+        <video id="main-player" playsinline webkit-playsinline crossorigin="anonymous" preload="auto"></video>
+        <div id="caption-overlay"><span id="caption-text"></span></div>
+    </div>
 
-  if(preset.value==='hormozi')
-    overlay.classList.add('text-white','tracking-widest');
+    <div class="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        
+        <header class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-black italic tracking-tighter">STUDIO<span class="text-indigo-500">CAPS</span></h1>
+                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Mobile Pro Editor</p>
+            </div>
+            <button onclick="document.getElementById('video-input').click()" class="bg-indigo-600 px-4 py-2 rounded-xl font-bold text-[10px] uppercase shadow-lg shadow-indigo-900/40">
+                <i class="fas fa-upload mr-1"></i> Upload
+            </button>
+            <input type="file" id="video-input" class="hidden" accept="video/*">
+        </header>
 
-  if(preset.value==='podcast')
-    overlay.classList.add('text-green-400','font-serif');
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center gap-4">
+            <button id="play-btn" class="w-12 h-12 bg-white text-black rounded-xl flex items-center justify-center shrink-0 shadow-xl active:scale-90 transition-transform">
+                <i class="fas fa-play"></i>
+            </button>
+            <div class="flex-1">
+                <input type="range" id="seek-bar" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none accent-indigo-500" value="0" step="0.1">
+                <div class="flex justify-between mt-2 text-[10px] font-mono text-slate-500">
+                    <span id="time-current">0:00</span>
+                    <span id="time-total">0:00</span>
+                </div>
+            </div>
+        </div>
 
-  if(preset.value==='meme')
-    overlay.classList.add('text-red-400','italic');
-}
+        <button id="ai-btn" class="w-full bg-indigo-600 py-4 rounded-2xl font-black text-xs tracking-widest uppercase shadow-xl active:scale-95 transition-transform">
+            <i class="fas fa-wand-magic-sparkles mr-2"></i> Auto-Generate Captions
+        </button>
 
-/* ================= EXPORT SRT ================= */
-function exportSRT(){
-  let out='';
-  captions.forEach((c,i)=>{
-    out += `${i+1}\n00:00:${c.start.toFixed(2)} --> 00:00:${c.end.toFixed(2)}\n${c.text}\n\n`;
-  });
+        <div class="space-y-2">
+            <h3 class="text-[10px] font-bold text-slate-500 uppercase px-1">Subtitle Tracks</h3>
+            <div class="timeline-container" id="timeline-wrap">
+                <div id="playhead" class="playhead"></div>
+                <div id="sub-tracks" class="relative h-full" style="width: 1000px; min-width: 100%;"></div>
+            </div>
+        </div>
 
-  const blob = new Blob([out],{type:'text/plain'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'captions.srt';
-  a.click();
-}
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="changeStyle('')" class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-[10px] font-bold uppercase hover:bg-slate-800">
+                Modern Sans
+            </button>
+            <button onclick="changeStyle('style-beast')" class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-[10px] font-bold uppercase text-amber-400 hover:bg-slate-800">
+                Beast Mode
+            </button>
+        </div>
 
-/* ================= BURN CAPTIONS ================= */
-async function burnCaptions(){
-  if(!videoInput.files[0]) return alert('Upload a video first');
+        <div id="editor" class="bg-slate-900 p-5 rounded-2xl space-y-4 border border-slate-800 hidden">
+            <div class="flex justify-between items-center">
+                <span class="text-xs font-bold text-slate-400 uppercase">Edit Text</span>
+                <button onclick="closeEditor()" class="text-slate-500 p-2"><i class="fas fa-times"></i></button>
+            </div>
+            <textarea id="edit-area" class="w-full bg-slate-800 p-4 rounded-xl text-sm border-none focus:ring-1 focus:ring-indigo-500 outline-none text-white" rows="3"></textarea>
+            <div class="flex gap-2">
+                <button id="save-btn" class="flex-1 bg-white text-black font-bold py-3 rounded-xl text-xs uppercase">Save</button>
+                <button id="del-btn" class="bg-rose-500 text-white px-5 py-3 rounded-xl"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+    </div>
 
-  if(!ffmpeg){
-    ffmpeg = new FFmpeg();
-    await ffmpeg.load({ coreURL:'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js' });
-  }
+    <script>
+        const apiKey = "";
+        const player = document.getElementById('main-player');
+        const timeline = document.getElementById('sub-tracks');
+        const playhead = document.getElementById('playhead');
+        let subs = [];
+        let activeId = null;
 
-  await ffmpeg.writeFile('in.mp4', await fetchFile(videoInput.files[0]));
+        document.getElementById('video-input').onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                player.src = url;
+                
+                // FORCE INITIAL PAINT (Fixes Black Screen)
+                player.load();
+                player.onloadeddata = () => {
+                    player.currentTime = 0.1; // Seek slightly to force the first frame to render
+                };
 
-  const text = captions.map(c=>c.text).join(' ')
-    .replace(/'/g,"\\'");
+                player.onloadedmetadata = () => {
+                    document.getElementById('time-total').innerText = formatTime(player.duration);
+                    timeline.style.width = (player.duration * 100 + 200) + 'px';
+                };
+            }
+        };
 
-  await ffmpeg.exec([
-    '-i','in.mp4',
-    '-vf',`drawtext=text='${text}':fontsize=32:fontcolor=white:x=(w-text_w)/2:y=h-120:box=1:boxcolor=black@0.6`,
-    '-codec:a','copy','out.mp4'
-  ]);
+        document.getElementById('play-btn').onclick = () => {
+            if (player.paused) {
+                player.play();
+                document.getElementById('play-btn').innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                player.pause();
+                document.getElementById('play-btn').innerHTML = '<i class="fas fa-play"></i>';
+            }
+        };
 
-  const data = await ffmpeg.readFile('out.mp4');
-  const url = URL.createObjectURL(new Blob([data.buffer],{type:'video/mp4'}));
+        player.ontimeupdate = () => {
+            const t = player.currentTime;
+            playhead.style.left = (t * 100) + 'px';
+            document.getElementById('seek-bar').value = (t / player.duration) * 100 || 0;
+            document.getElementById('time-current').innerText = formatTime(t);
 
-  download.href = url;
-  download.classList.remove('hidden');
-}
-</script></body>
+            const current = subs.find(s => t >= s.start && t <= s.end);
+            document.getElementById('caption-text').innerText = current ? current.text : '';
+        };
+
+        document.getElementById('seek-bar').oninput = (e) => {
+            player.currentTime = (e.target.value / 100) * player.duration;
+        };
+
+        document.getElementById('ai-btn').onclick = async () => {
+            const file = document.getElementById('video-input').files[0];
+            if (!file) return;
+
+            document.getElementById('loader').style.display = 'flex';
+
+            try {
+                const base64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.readAsDataURL(file);
+                });
+
+                const prompt = `Transcribe speech. Return ONLY JSON array: [{"start": 0.5, "end": 2.0, "text": "transcription"}].`;
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                { text: prompt },
+                                { inlineData: { mimeType: file.type, data: base64 } }
+                            ]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                const aiText = data.candidates[0].content.parts[0].text.trim();
+                const jsonStr = aiText.substring(aiText.indexOf('['), aiText.lastIndexOf(']') + 1);
+                
+                subs = JSON.parse(jsonStr).map(s => ({ 
+                    ...s, 
+                    id: Math.random(),
+                    start: parseFloat(s.start),
+                    end: parseFloat(s.end)
+                }));
+                
+                renderTimeline();
+                document.getElementById('loader').style.display = 'none';
+            } catch (err) {
+                console.error(err);
+                alert("AI error. Check connection.");
+                document.getElementById('loader').style.display = 'none';
+            }
+        };
+
+        function renderTimeline() {
+            timeline.innerHTML = '';
+            timeline.appendChild(playhead);
+            subs.forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'sub-block';
+                div.style.left = (s.start * 100) + 'px';
+                div.style.width = Math.max(50, (s.end - s.start) * 100) + 'px';
+                div.innerText = s.text;
+                div.onclick = () => {
+                    activeId = s.id;
+                    player.currentTime = s.start;
+                    document.getElementById('editor').classList.remove('hidden');
+                    document.getElementById('edit-area').value = s.text;
+                    document.getElementById('editor').scrollIntoView({ behavior: 'smooth' });
+                };
+                timeline.appendChild(div);
+            });
+        }
+
+        document.getElementById('save-btn').onclick = () => {
+            const s = subs.find(x => x.id === activeId);
+            if (s) {
+                s.text = document.getElementById('edit-area').value;
+                renderTimeline();
+            }
+        };
+
+        document.getElementById('del-btn').onclick = () => {
+            subs = subs.filter(x => x.id !== activeId);
+            renderTimeline();
+            closeEditor();
+        };
+
+        function closeEditor() { document.getElementById('editor').classList.add('hidden'); }
+        function changeStyle(c) { document.getElementById('caption-text').className = c; }
+        function formatTime(s) {
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${m}:${sec.toString().padStart(2, '0')}`;
+        }
+    </script>
+</body>
 </html>
+
