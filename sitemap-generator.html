@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Sitemap Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/dist/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -18,8 +18,8 @@
             border: 3px solid #f3f3f3;
             border-radius: 50%;
             border-top: 3px solid #3b82f6;
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -28,10 +28,29 @@
 <body class="bg-slate-50 min-h-screen text-slate-900">
 
     <div class="max-w-4xl mx-auto p-4 md:p-8">
-        <header class="mb-8 text-center">
-            <h1 class="text-3xl font-bold text-slate-800 mb-2">Sitemap Generator</h1>
-            <p class="text-slate-600">Enter a website URL to generate a standard XML sitemap for SEO.</p>
+        <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800 mb-1">Sitemap Generator</h1>
+                <p class="text-slate-600">Generate SEO-ready XML sitemaps using AI.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleSettings()" class="p-2 px-4 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-all text-sm font-medium flex items-center gap-2">
+                    <i class="fa-solid fa-key text-amber-500"></i> API Settings
+                </button>
+            </div>
         </header>
+
+        <!-- API Key Modal/Section -->
+        <div id="apiSettings" class="hidden mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-6">
+            <h3 class="font-bold text-amber-800 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-gear"></i> Gemini API Configuration
+            </h3>
+            <p class="text-sm text-amber-700 mb-4">Your key is stored locally in your browser and is never sent to our servers.</p>
+            <div class="flex flex-col md:flex-row gap-3">
+                <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API Key" class="flex-1 px-4 py-2 rounded-lg border border-amber-300 focus:ring-2 focus:ring-amber-500 outline-none">
+                <button onclick="saveApiKey()" class="bg-amber-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-amber-700 transition-all">Save Key</button>
+            </div>
+        </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -41,7 +60,9 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-2 text-slate-700">Change Frequency</label>
-                    <select id="freq" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none">
+                    <select id="freq" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none bg-white">
+                        <option value="always">Always</option>
+                        <option value="hourly">Hourly</option>
                         <option value="daily">Daily</option>
                         <option value="weekly" selected>Weekly</option>
                         <option value="monthly">Monthly</option>
@@ -50,10 +71,11 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-2 text-slate-700">Default Priority</label>
-                    <select id="priority" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none">
+                    <select id="priority" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none bg-white">
                         <option value="1.0">1.0 (High)</option>
                         <option value="0.8" selected>0.8 (Standard)</option>
                         <option value="0.5">0.5 (Low)</option>
+                        <option value="0.3">0.3 (Archive)</option>
                     </select>
                 </div>
             </div>
@@ -63,86 +85,112 @@
             </button>
         </div>
 
-        <!-- Status/Error Message -->
-        <div id="statusMsg" class="hidden mb-4 p-4 rounded-lg text-sm"></div>
+        <!-- Custom Notification UI -->
+        <div id="toast" class="hidden fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg border transition-all transform translate-y-0">
+            <p id="toastMsg" class="font-medium text-sm"></p>
+        </div>
 
         <!-- Result Section -->
-        <div id="resultSection" class="hidden space-y-4">
+        <div id="resultSection" class="hidden space-y-4 animate-in fade-in duration-500">
             <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-100 p-4 rounded-xl border border-slate-200">
                 <div class="flex items-center gap-2">
-                    <span id="pageCount" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">0 Pages Found</span>
+                    <span id="pageCount" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">0 Pages</span>
                 </div>
                 <div class="flex gap-2">
                     <button onclick="copyToClipboard()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center gap-2">
-                        <i class="fa-regular fa-copy"></i> Copy
+                        <i class="fa-regular fa-copy"></i> Copy XML
                     </button>
-                    <button onclick="downloadSitemap()" class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 flex items-center gap-2">
-                        <i class="fa-solid fa-download"></i> Download .xml
+                    <button onclick="downloadSitemap()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                        <i class="fa-solid fa-download"></i> Download
                     </button>
                 </div>
             </div>
 
-            <pre id="xmlPreview" class="xml-preview p-6 rounded-xl overflow-x-auto text-sm leading-relaxed max-h-[500px]"></pre>
+            <pre id="xmlPreview" class="xml-preview p-6 rounded-xl overflow-x-auto text-sm leading-relaxed max-h-[500px] border border-slate-800"></pre>
         </div>
     </div>
 
     <script>
-        const apiKey = "";
+        let USER_API_KEY = localStorage.getItem('gemini_sitemap_key') || "";
         const generateBtn = document.getElementById('generateBtn');
         const urlInput = document.getElementById('urlInput');
-        const statusMsg = document.getElementById('statusMsg');
         const resultSection = document.getElementById('resultSection');
         const xmlPreview = document.getElementById('xmlPreview');
         const pageCountBadge = document.getElementById('pageCount');
+        const apiSettings = document.getElementById('apiSettings');
+        const apiKeyInput = document.getElementById('apiKeyInput');
 
-        let currentXml = "";
+        if (USER_API_KEY) {
+            apiKeyInput.value = USER_API_KEY;
+        } else {
+            apiSettings.classList.remove('hidden');
+        }
+
+        function toggleSettings() {
+            apiSettings.classList.toggle('hidden');
+        }
+
+        function saveApiKey() {
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                USER_API_KEY = key;
+                localStorage.setItem('gemini_sitemap_key', key);
+                showToast("API Key saved successfully!", "success");
+                apiSettings.classList.add('hidden');
+            } else {
+                showToast("Please enter a key.", "error");
+            }
+        }
 
         async function generateSitemap() {
-            const baseUrl = urlInput.value.trim();
-            const freq = document.getElementById('freq').value;
-            const priority = document.getElementById('priority').value;
-
-            if (!baseUrl) {
-                showStatus("Please enter a valid URL.", "error");
+            if (!USER_API_KEY) {
+                showToast("Please set your API Key first.", "error");
+                apiSettings.classList.remove('hidden');
                 return;
             }
 
-            // Start Loading
+            const baseUrl = urlInput.value.trim().replace(/\/+$/, '');
+            if (!baseUrl || !baseUrl.startsWith('http')) {
+                showToast("Please enter a valid URL (starting with http/https).", "error");
+                return;
+            }
+
             setLoading(true);
-            showStatus("Analyzing website and generating sitemap...", "info");
 
-            const systemPrompt = `You are a web crawling assistant. Given a URL, provide a list of 10-20 most likely standard subpages for that website (e.g., /, /about, /contact, /services, /blog) based on common website patterns. 
-            Return the result ONLY as a JSON array of strings containing full URLs.`;
+            const systemPrompt = `You are an SEO expert. Analyze the provided domain and predict the most important pages for a standard sitemap. 
+            Include the root, common pages (about, contact, privacy), and likely category or service pages.
+            Return a JSON array of full URLs only. Do not include any text outside the array.`;
 
-            const userQuery = `Generate a list of likely subpages for the website: ${baseUrl}`;
+            const userQuery = `Predict the top 15-20 most important subpages for a sitemap for this website: ${baseUrl}`;
 
             try {
-                const response = await callGemini(userQuery, systemPrompt);
+                const pagesJson = await callGemini(userQuery, systemPrompt);
                 let pages = [];
                 
                 try {
-                    // Try to parse the JSON returned by Gemini
-                    const cleanJson = response.replace(/```json|```/g, '').trim();
+                    const cleanJson = pagesJson.replace(/```json|```/g, '').trim();
                     pages = JSON.parse(cleanJson);
                 } catch (e) {
-                    // Fallback if parsing fails
-                    pages = [baseUrl, `${baseUrl}/about`, `${baseUrl}/contact`, `${baseUrl}/services`].map(p => p.replace(/\/+$/, ''));
+                    // Manual parsing fallback
+                    const matches = pagesJson.match(/https?:\/\/[^"\s]+/g);
+                    pages = matches ? [...new Set(matches)] : [baseUrl];
                 }
 
-                buildXml(pages, freq, priority);
-                setLoading(false);
-                resultSection.classList.remove('hidden');
-                showStatus("Sitemap generated successfully!", "success");
+                // Ensure the base URL is always at the top
+                pages = [baseUrl, ...pages.filter(p => p !== baseUrl)];
 
+                buildXml(pages);
+                resultSection.classList.remove('hidden');
+                showToast("Sitemap generated!", "success");
             } catch (err) {
-                console.error(err);
-                showStatus("Error generating sitemap. Please check your URL and try again.", "error");
+                showToast("Error. Check your API key or connection.", "error");
+            } finally {
                 setLoading(false);
             }
         }
 
         async function callGemini(userQuery, systemPrompt, retries = 0) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${USER_API_KEY}`;
             
             try {
                 const response = await fetch(url, {
@@ -154,27 +202,31 @@
                     })
                 });
 
-                if (!response.ok) throw new Error("API call failed");
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || "API call failed");
+                }
 
                 const result = await response.json();
                 return result.candidates?.[0]?.content?.parts?.[0]?.text || "";
             } catch (err) {
-                if (retries < 5) {
-                    const delay = Math.pow(2, retries) * 1000;
-                    await new Promise(resolve => setTimeout(resolve, delay));
+                if (retries < 3) {
+                    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, retries)));
                     return callGemini(userQuery, systemPrompt, retries + 1);
                 }
                 throw err;
             }
         }
 
-        function buildXml(pages, freq, priority) {
+        function buildXml(pages) {
+            const freq = document.getElementById('freq').value;
+            const priority = document.getElementById('priority').value;
             const date = new Date().toISOString().split('T')[0];
+            
             let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
             xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
 
             pages.forEach((page, index) => {
-                // Determine priority (first page is usually 1.0)
                 const p = index === 0 ? "1.0" : priority;
                 xml += `  <url>\n`;
                 xml += `    <loc>${escapeXml(page)}</loc>\n`;
@@ -185,70 +237,50 @@
             });
 
             xml += `</urlset>`;
-            currentXml = xml;
             xmlPreview.textContent = xml;
-            pageCountBadge.textContent = `${pages.length} Pages Generated`;
+            pageCountBadge.textContent = `${pages.length} Pages`;
         }
 
         function escapeXml(unsafe) {
-            return unsafe.replace(/[<>&'"]/g, function (c) {
-                switch (c) {
-                    case '<': return '&lt;';
-                    case '>': return '&gt;';
-                    case '&': return '&amp;';
-                    case '\'': return '&apos;';
-                    case '"': return '&quot;';
-                }
-            });
+            return unsafe.replace(/[<>&'"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','\'':'&apos;','\"':'&quot;'}[c]));
         }
 
         function setLoading(isLoading) {
-            if (isLoading) {
-                generateBtn.disabled = true;
-                generateBtn.innerHTML = `<div class="loader"></div> Processing...`;
-            } else {
-                generateBtn.disabled = false;
-                generateBtn.innerHTML = `<span>Generate Sitemap</span>`;
-            }
+            generateBtn.disabled = isLoading;
+            generateBtn.innerHTML = isLoading ? `<div class="loader"></div> Crawling...` : `<span>Generate Sitemap</span>`;
         }
 
-        function showStatus(msg, type) {
-            statusMsg.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-blue-100', 'text-blue-700', 'bg-green-100', 'text-green-700');
-            if (type === 'error') statusMsg.classList.add('bg-red-100', 'text-red-700');
-            else if (type === 'success') statusMsg.classList.add('bg-green-100', 'text-green-700');
-            else statusMsg.classList.add('bg-blue-100', 'text-blue-700');
-            statusMsg.textContent = msg;
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toast.className = `fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg border transition-all duration-300 block ${type === 'error' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-green-50 border-green-200 text-green-800'}`;
+            toastMsg.textContent = msg;
+            setTimeout(() => { toast.classList.add('hidden'); }, 3000);
         }
 
         function copyToClipboard() {
+            const text = xmlPreview.textContent;
             const textArea = document.createElement("textarea");
-            textArea.value = currentXml;
+            textArea.value = text;
             document.body.appendChild(textArea);
             textArea.select();
-            try {
-                document.execCommand('copy');
-                showStatus("Copied to clipboard!", "success");
-            } catch (err) {
-                showStatus("Failed to copy.", "error");
-            }
+            document.execCommand('copy');
             document.body.removeChild(textArea);
+            showToast("XML copied to clipboard!", "success");
         }
 
         function downloadSitemap() {
-            const blob = new Blob([currentXml], { type: 'text/xml' });
+            const blob = new Blob([xmlPreview.textContent], { type: 'text/xml' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = 'sitemap.xml';
-            document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
         }
 
         generateBtn.addEventListener('click', generateSitemap);
     </script>
 </body>
 </html>
-
 
