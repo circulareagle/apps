@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Sitemap Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/dist/css/bootstrap.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .xml-preview {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            scrollbar-width: thin;
+        }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-900">
+
+    <div class="max-w-4xl mx-auto p-4 md:p-8">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">Sitemap Generator</h1>
+            <p class="text-slate-600">Enter a website URL to generate a standard XML sitemap for SEO.</p>
+        </header>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold mb-2 text-slate-700">Website URL</label>
+                    <input type="url" id="urlInput" placeholder="https://example.com" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-700">Change Frequency</label>
+                    <select id="freq" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none">
+                        <option value="daily">Daily</option>
+                        <option value="weekly" selected>Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2 text-slate-700">Default Priority</label>
+                    <select id="priority" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none">
+                        <option value="1.0">1.0 (High)</option>
+                        <option value="0.8" selected>0.8 (Standard)</option>
+                        <option value="0.5">0.5 (Low)</option>
+                    </select>
+                </div>
+            </div>
+
+            <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2">
+                <span>Generate Sitemap</span>
+            </button>
+        </div>
+
+        <!-- Status/Error Message -->
+        <div id="statusMsg" class="hidden mb-4 p-4 rounded-lg text-sm"></div>
+
+        <!-- Result Section -->
+        <div id="resultSection" class="hidden space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-100 p-4 rounded-xl border border-slate-200">
+                <div class="flex items-center gap-2">
+                    <span id="pageCount" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">0 Pages Found</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="copyToClipboard()" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center gap-2">
+                        <i class="fa-regular fa-copy"></i> Copy
+                    </button>
+                    <button onclick="downloadSitemap()" class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                        <i class="fa-solid fa-download"></i> Download .xml
+                    </button>
+                </div>
+            </div>
+
+            <pre id="xmlPreview" class="xml-preview p-6 rounded-xl overflow-x-auto text-sm leading-relaxed max-h-[500px]"></pre>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = "";
+        const generateBtn = document.getElementById('generateBtn');
+        const urlInput = document.getElementById('urlInput');
+        const statusMsg = document.getElementById('statusMsg');
+        const resultSection = document.getElementById('resultSection');
+        const xmlPreview = document.getElementById('xmlPreview');
+        const pageCountBadge = document.getElementById('pageCount');
+
+        let currentXml = "";
+
+        async function generateSitemap() {
+            const baseUrl = urlInput.value.trim();
+            const freq = document.getElementById('freq').value;
+            const priority = document.getElementById('priority').value;
+
+            if (!baseUrl) {
+                showStatus("Please enter a valid URL.", "error");
+                return;
+            }
+
+            // Start Loading
+            setLoading(true);
+            showStatus("Analyzing website and generating sitemap...", "info");
+
+            const systemPrompt = `You are a web crawling assistant. Given a URL, provide a list of 10-20 most likely standard subpages for that website (e.g., /, /about, /contact, /services, /blog) based on common website patterns. 
+            Return the result ONLY as a JSON array of strings containing full URLs.`;
+
+            const userQuery = `Generate a list of likely subpages for the website: ${baseUrl}`;
+
+            try {
+                const response = await callGemini(userQuery, systemPrompt);
+                let pages = [];
+                
+                try {
+                    // Try to parse the JSON returned by Gemini
+                    const cleanJson = response.replace(/```json|```/g, '').trim();
+                    pages = JSON.parse(cleanJson);
+                } catch (e) {
+                    // Fallback if parsing fails
+                    pages = [baseUrl, `${baseUrl}/about`, `${baseUrl}/contact`, `${baseUrl}/services`].map(p => p.replace(/\/+$/, ''));
+                }
+
+                buildXml(pages, freq, priority);
+                setLoading(false);
+                resultSection.classList.remove('hidden');
+                showStatus("Sitemap generated successfully!", "success");
+
+            } catch (err) {
+                console.error(err);
+                showStatus("Error generating sitemap. Please check your URL and try again.", "error");
+                setLoading(false);
+            }
+        }
+
+        async function callGemini(userQuery, systemPrompt, retries = 0) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userQuery }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    })
+                });
+
+                if (!response.ok) throw new Error("API call failed");
+
+                const result = await response.json();
+                return result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            } catch (err) {
+                if (retries < 5) {
+                    const delay = Math.pow(2, retries) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return callGemini(userQuery, systemPrompt, retries + 1);
+                }
+                throw err;
+            }
+        }
+
+        function buildXml(pages, freq, priority) {
+            const date = new Date().toISOString().split('T')[0];
+            let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+            xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+
+            pages.forEach((page, index) => {
+                // Determine priority (first page is usually 1.0)
+                const p = index === 0 ? "1.0" : priority;
+                xml += `  <url>\n`;
+                xml += `    <loc>${escapeXml(page)}</loc>\n`;
+                xml += `    <lastmod>${date}</lastmod>\n`;
+                xml += `    <changefreq>${freq}</changefreq>\n`;
+                xml += `    <priority>${p}</priority>\n`;
+                xml += `  </url>\n`;
+            });
+
+            xml += `</urlset>`;
+            currentXml = xml;
+            xmlPreview.textContent = xml;
+            pageCountBadge.textContent = `${pages.length} Pages Generated`;
+        }
+
+        function escapeXml(unsafe) {
+            return unsafe.replace(/[<>&'"]/g, function (c) {
+                switch (c) {
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '&': return '&amp;';
+                    case '\'': return '&apos;';
+                    case '"': return '&quot;';
+                }
+            });
+        }
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = `<div class="loader"></div> Processing...`;
+            } else {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = `<span>Generate Sitemap</span>`;
+            }
+        }
+
+        function showStatus(msg, type) {
+            statusMsg.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-blue-100', 'text-blue-700', 'bg-green-100', 'text-green-700');
+            if (type === 'error') statusMsg.classList.add('bg-red-100', 'text-red-700');
+            else if (type === 'success') statusMsg.classList.add('bg-green-100', 'text-green-700');
+            else statusMsg.classList.add('bg-blue-100', 'text-blue-700');
+            statusMsg.textContent = msg;
+        }
+
+        function copyToClipboard() {
+            const textArea = document.createElement("textarea");
+            textArea.value = currentXml;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showStatus("Copied to clipboard!", "success");
+            } catch (err) {
+                showStatus("Failed to copy.", "error");
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function downloadSitemap() {
+            const blob = new Blob([currentXml], { type: 'text/xml' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sitemap.xml';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        generateBtn.addEventListener('click', generateSitemap);
+    </script>
+</body>
+</html>
+
+
