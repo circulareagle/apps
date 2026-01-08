@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Favicon Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .drop-zone {
+            transition: all 0.3s ease;
+            border: 2px dashed #cbd5e1;
+        }
+        .drop-zone.dragover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: scale(1.01);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
+
+    <div class="max-w-5xl mx-auto px-4 py-12">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">Favicon Generator</h1>
+            <p class="text-lg text-slate-600 max-w-2xl mx-auto">Upload a high-resolution image (PNG, JPG, SVG) and generate all required sizes for modern browsers, iOS, and Android.</p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Column: Upload & Preview -->
+            <div class="lg:col-span-5 space-y-6">
+                <div id="dropZone" class="drop-zone bg-white rounded-2xl p-10 text-center cursor-pointer shadow-sm hover:shadow-md">
+                    <input type="file" id="fileInput" class="hidden" accept="image/*">
+                    <div id="uploadPrompt">
+                        <div class="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        </div>
+                        <p class="text-sm font-medium text-slate-700">Click to upload or drag and drop</p>
+                        <p class="text-xs text-slate-500 mt-1">SVG, PNG, JPG (Min. 512x512 recommended)</p>
+                    </div>
+                    <div id="previewContainer" class="hidden">
+                        <img id="sourcePreview" class="max-h-48 mx-auto rounded shadow-sm mb-4" src="" alt="Source preview">
+                        <button id="resetBtn" class="text-sm text-red-600 hover:text-red-700 font-medium">Remove image</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-800 mb-4">Configuration</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Background Color (for PWA)</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" id="bgColor" value="#ffffff" class="w-10 h-10 rounded border-none cursor-pointer">
+                                <input type="text" id="bgColorText" value="#ffffff" class="flex-1 bg-slate-100 border-none rounded-lg px-3 py-2 text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">App Name</label>
+                            <input type="text" id="appName" placeholder="My Awesome App" class="w-full bg-slate-100 border-none rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button id="generateBtn" disabled class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-200">
+                            Generate Assets
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Results -->
+            <div id="resultsSection" class="lg:col-span-7 opacity-50 pointer-events-none transition-opacity duration-500">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <!-- Tabs -->
+                    <div class="flex border-b border-slate-100 bg-slate-50/50">
+                        <button onclick="switchTab('code')" id="tab-code" class="px-6 py-4 text-sm font-bold border-b-2 border-blue-600 text-blue-600">HTML Code</button>
+                        <button onclick="switchTab('assets')" id="tab-assets" class="px-6 py-4 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700">Assets Preview</button>
+                    </div>
+
+                    <!-- Code Tab -->
+                    <div id="content-code" class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Copy to &lt;head&gt;</span>
+                            <button id="copyBtn" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-1 px-3 rounded-md font-medium">Copy Code</button>
+                        </div>
+                        <pre id="codeBlock" class="bg-slate-900 text-slate-300 p-5 rounded-xl text-xs leading-relaxed font-mono custom-scrollbar max-h-[400px] overflow-y-auto"></pre>
+                        
+                        <div class="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-100">
+                            <p class="text-xs text-amber-800">
+                                <strong>Note:</strong> Save the generated images in your website's root directory or update the <code>href</code> paths in the code above.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Assets Tab -->
+                    <div id="content-assets" class="p-6 hidden">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="assetGrid">
+                            <!-- Generated icons will appear here -->
+                        </div>
+                        <div class="mt-8 text-center">
+                            <button id="downloadAllBtn" class="inline-flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Download All (.zip)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden Canvas for processing -->
+        <canvas id="processCanvas" class="hidden"></canvas>
+    </div>
+
+    <!-- Feedback Toast -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full text-sm font-medium shadow-2xl opacity-0 transition-opacity duration-300 pointer-events-none">
+        Copied to clipboard!
+    </div>
+
+    <!-- JSZip for bundling -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const sourcePreview = document.getElementById('sourcePreview');
+        const uploadPrompt = document.getElementById('uploadPrompt');
+        const previewContainer = document.getElementById('previewContainer');
+        const resetBtn = document.getElementById('resetBtn');
+        const generateBtn = document.getElementById('generateBtn');
+        const resultsSection = document.getElementById('resultsSection');
+        const assetGrid = document.getElementById('assetGrid');
+        const codeBlock = document.getElementById('codeBlock');
+        const bgColorInput = document.getElementById('bgColor');
+        const bgColorText = document.getElementById('bgColorText');
+        const appNameInput = document.getElementById('appName');
+        const canvas = document.getElementById('processCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let sourceImage = null;
+
+        const ICON_SIZES = [
+            { name: 'favicon-16x16.png', size: 16, rel: 'icon' },
+            { name: 'favicon-32x32.png', size: 32, rel: 'icon' },
+            { name: 'apple-touch-icon.png', size: 180, rel: 'apple-touch-icon' },
+            { name: 'android-chrome-192x192.png', size: 192, rel: 'icon' },
+            { name: 'android-chrome-512x512.png', size: 512, rel: 'icon' }
+        ];
+
+        // UI Interactions
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+        resetBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sourceImage = null;
+            sourcePreview.src = '';
+            previewContainer.classList.add('hidden');
+            uploadPrompt.classList.remove('hidden');
+            generateBtn.disabled = true;
+            resultsSection.style.opacity = '0.5';
+            resultsSection.style.pointerEvents = 'none';
+        });
+
+        bgColorInput.addEventListener('input', (e) => bgColorText.value = e.target.value);
+        bgColorText.addEventListener('input', (e) => bgColorInput.value = e.target.value);
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                sourceImage = new Image();
+                sourceImage.onload = () => {
+                    sourcePreview.src = e.target.result;
+                    uploadPrompt.classList.add('hidden');
+                    previewContainer.classList.remove('hidden');
+                    generateBtn.disabled = false;
+                };
+                sourceImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function switchTab(tab) {
+            const codeTab = document.getElementById('tab-code');
+            const assetsTab = document.getElementById('tab-assets');
+            const codeContent = document.getElementById('content-code');
+            const assetsContent = document.getElementById('content-assets');
+
+            if (tab === 'code') {
+                codeTab.classList.replace('border-transparent', 'border-blue-600');
+                codeTab.classList.replace('text-slate-500', 'text-blue-600');
+                assetsTab.classList.replace('border-blue-600', 'border-transparent');
+                assetsTab.classList.replace('text-blue-600', 'text-slate-500');
+                codeContent.classList.remove('hidden');
+                assetsContent.classList.add('hidden');
+            } else {
+                assetsTab.classList.replace('border-transparent', 'border-blue-600');
+                assetsTab.classList.replace('text-blue-600', 'text-slate-500');
+                codeTab.classList.replace('border-blue-600', 'border-transparent');
+                codeTab.classList.replace('text-blue-600', 'text-slate-500');
+                assetsContent.classList.remove('hidden');
+                codeContent.classList.add('hidden');
+            }
+        }
+
+        async function generateIcons() {
+            if (!sourceImage) return;
+
+            resultsSection.style.opacity = '1';
+            resultsSection.style.pointerEvents = 'auto';
+            assetGrid.innerHTML = '';
+            
+            const generatedBlobs = {};
+            const themeColor = bgColorInput.value;
+            const appName = appNameInput.value || "App";
+
+            // Generate Icons
+            for (const item of ICON_SIZES) {
+                canvas.width = item.size;
+                canvas.height = item.size;
+                ctx.clearRect(0, 0, item.size, item.size);
+                ctx.drawImage(sourceImage, 0, 0, item.size, item.size);
+                
+                const dataUrl = canvas.toDataURL('image/png');
+                const blob = await (await fetch(dataUrl)).blob();
+                generatedBlobs[item.name] = blob;
+
+                // Add to UI grid
+                const div = document.createElement('div');
+                div.className = 'flex flex-col items-center p-3 bg-slate-50 rounded-lg border border-slate-100';
+                div.innerHTML = `
+                    <img src="${dataUrl}" class="w-12 h-12 object-contain mb-2 bg-white p-1 rounded shadow-sm">
+                    <span class="text-[10px] font-mono text-slate-500">${item.size}x${item.size}</span>
+                    <span class="text-[10px] font-bold text-slate-700 truncate w-full text-center">${item.name}</span>
+                `;
+                assetGrid.appendChild(div);
+            }
+
+            // Generate Manifest
+            const manifest = {
+                name: appName,
+                short_name: appName,
+                icons: [
+                    { src: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+                    { src: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" }
+                ],
+                theme_color: themeColor,
+                background_color: themeColor,
+                display: "standalone"
+            };
+            const manifestBlob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
+            generatedBlobs['site.webmanifest'] = manifestBlob;
+
+            // Generate Code
+            const htmlCode = `<!-- Favicons -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="msapplication-TileColor" content="${themeColor}">
+<meta name="theme-color" content="${themeColor}">`;
+
+            codeBlock.textContent = htmlCode;
+
+            // Setup Download
+            document.getElementById('downloadAllBtn').onclick = () => downloadZip(generatedBlobs);
+        }
+
+        async function downloadZip(blobs) {
+            const zip = new JSZip();
+            for (const [name, blob] of Object.entries(blobs)) {
+                zip.file(name, blob);
+            }
+            const content = await zip.generateAsync({ type: 'blob' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = 'favicons.zip';
+            link.click();
+        }
+
+        document.getElementById('copyBtn').onclick = () => {
+            const text = codeBlock.textContent;
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            const toast = document.getElementById('toast');
+            toast.style.opacity = '1';
+            setTimeout(() => toast.style.opacity = '0', 2000);
+        };
+
+        generateBtn.onclick = generateIcons;
+
+    </script>
+</body>
+</html>
+
