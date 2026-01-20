@@ -1,0 +1,369 @@
+import React, { useState, useEffect } from 'react';
+import { Upload, Smartphone, Users, Download, AlertCircle, Check, Trash2, Merge, FileText } from 'lucide-react';
+
+/**
+ * Main Application Component
+ */
+export default function App() {
+  const [rawContacts, setRawContacts] = useState([]);
+  const [mergedContacts, setMergedContacts] = useState([]);
+  const [duplicatesFound, setDuplicatesFound] = useState(0);
+  const [step, setStep] = useState('import'); // 'import', 'processing', 'results'
+  const [error, setError] = useState(null);
+  const [isSupported, setIsSupported] = useState(false);
+
+  useEffect(() => {
+    // Check if Contact Picker API is supported
+    if ('contacts' in navigator && 'ContactsManager' in window) {
+      setIsSupported(true);
+    }
+  }, []);
+
+  // --- Logic: Normalization & Merging ---
+
+  const normalizePhone = (phone) => {
+    if (!phone) return '';
+    // Remove all non-numeric characters except +
+    return phone.replace(/[^0-9+]/g, '');
+  };
+
+  const processContacts = (contactsData) => {
+    setStep('processing');
+    const phoneMap = new Map();
+    let duplicateCount = 0;
+
+    contactsData.forEach(contact => {
+      // Some contacts have multiple numbers. We need to handle them carefully.
+      // For this simple merger, we primary key on the FIRST number found.
+      // A more complex app might graph-link contacts sharing any number.
+      
+      const primaryPhone = Array.isArray(contact.tel) ? contact.tel[0] : contact.tel;
+      
+      if (!primaryPhone) return; // Skip contacts without phone numbers
+
+      const normalized = normalizePhone(typeof primaryPhone === 'object' ? primaryPhone.value : primaryPhone);
+      
+      if (!normalized) return;
+
+      if (phoneMap.has(normalized)) {
+        duplicateCount++;
+        const existing = phoneMap.get(normalized);
+        
+        // MERGE STRATEGY:
+        // 1. Combine names (keep longest name as primary if similar, or append)
+        // 2. Combine emails (unique set)
+        
+        // Simple name merge: prefer existing if it exists, else new
+        const name = existing.name || contact.name; 
+        
+        // Merge emails
+        const existingEmails = Array.isArray(existing.email) ? existing.email : (existing.email ? [existing.email] : []);
+        const newEmails = Array.isArray(contact.email) ? contact.email : (contact.email ? [contact.email] : []);
+        const uniqueEmails = [...new Set([...existingEmails, ...newEmails])];
+
+        phoneMap.set(normalized, {
+          ...existing,
+          name: name, // simplified for demo
+          email: uniqueEmails,
+          // Keep track of merge count for UI
+          _mergeCount: (existing._mergeCount || 1) + 1
+        });
+
+      } else {
+        phoneMap.set(normalized, {
+          ...contact,
+          tel: [normalized], // Standardize to array
+          _mergeCount: 1
+        });
+      }
+    });
+
+    setDuplicatesFound(duplicateCount);
+    setMergedContacts(Array.from(phoneMap.values()));
+    setStep('results');
+  };
+
+  // --- Handlers: Input ---
+
+  const handleNativeImport = async () => {
+    setError(null);
+    try {
+      const props = ['name', 'email', 'tel'];
+      const options = { multiple: true };
+      
+      const contacts = await navigator.contacts.select(props, options);
+      
+      if (contacts.length === 0) {
+        setError("No contacts selected.");
+        return;
+      }
+
+      // Transform native format to our internal format
+      // Native API returns: { name: ['John'], tel: ['123'], email: ['a@b.com'] }
+      const formatted = contacts.map(c => ({
+        name: c.name ? c.name[0] : 'Unknown',
+        tel: c.tel || [],
+        email: c.email || []
+      }));
+
+      setRawContacts(formatted);
+      processContacts(formatted);
+
+    } catch (ex) {
+      console.error(ex);
+      setError("Unable to access contacts. Try the File Upload method.");
+    }
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target.result;
+      const parsed = parseVCF(content);
+      setRawContacts(parsed);
+      processContacts(parsed);
+    };
+    reader.readAsText(file);
+  };
+
+  // --- Logic: VCF Parsing/Generating ---
+
+  const parseVCF = (vcfText) => {
+    // Very basic VCF parser for demonstration
+    // Real VCF parsing is complex; this handles standard FN, TEL, EMAIL
+    const lines = vcfText.split(/\r\n|\n/);
+    const contacts = [];
+    let currentContact = {};
+
+    lines.forEach(line => {
+      if (line.startsWith('BEGIN:VCARD')) {
+        currentContact = { tel: [], email: [] };
+      } else if (line.startsWith('END:VCARD')) {
+        if (currentContact.tel && currentContact.tel.length > 0) {
+          contacts.push(currentContact);
+        }
+      } else if (line.startsWith('FN:')) {
+        currentContact.name = line.substring(3);
+      } else if (line.startsWith('TEL')) {
+        // Handle TEL;CELL:12345 or TEL:12345
+        const parts = line.split(':');
+        if (parts.length > 1) currentContact.tel.push(parts[1]);
+      } else if (line.startsWith('EMAIL')) {
+        const parts = line.split(':');
+        if (parts.length > 1) currentContact.email.push(parts[1]);
+      }
+    });
+    return contacts;
+  };
+
+  const generateVCF = (contacts) => {
+    let vcf = "";
+    contacts.forEach(c => {
+      vcf += "BEGIN:VCARD\nVERSION:3.0\n";
+      vcf += `FN:${c.name || 'Unknown'}\n`;
+      
+      if (Array.isArray(c.tel)) {
+        c.tel.forEach(t => vcf += `TEL;TYPE=CELL:${t}\n`);
+      } else {
+        vcf += `TEL;TYPE=CELL:${c.tel}\n`;
+      }
+
+      if (Array.isArray(c.email)) {
+        c.email.forEach(e => vcf += `EMAIL:${e}\n`);
+      }
+
+      vcf += "END:VCARD\n";
+    });
+    return vcf;
+  };
+
+  const downloadCleaned = () => {
+    const vcfString = generateVCF(mergedContacts);
+    const blob = new Blob([vcfString], { type: 'text/vcard' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'cleaned_contacts.vcf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // --- Render Helpers ---
+
+  const ImportScreen = () => (
+    <div className="flex flex-col items-center justify-center space-y-8 py-10">
+      <div className="text-center space-y-2">
+        <h2 className="text-3xl font-bold text-slate-800">Phone Contact Cleaner</h2>
+        <p className="text-slate-500 max-w-md mx-auto">
+          Identify duplicate phone numbers and merge them into a single, clean contact list.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl px-4">
+        {/* Native API Option */}
+        <button
+          onClick={handleNativeImport}
+          className={`flex flex-col items-center p-8 rounded-2xl border-2 transition-all ${
+            isSupported 
+              ? 'border-blue-100 bg-blue-50 hover:border-blue-300 hover:shadow-md cursor-pointer' 
+              : 'border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed'
+          }`}
+          disabled={!isSupported}
+        >
+          <div className="bg-blue-100 p-4 rounded-full mb-4">
+            <Smartphone className="w-8 h-8 text-blue-600" />
+          </div>
+          <h3 className="font-semibold text-lg text-slate-800">Scan Phone</h3>
+          <p className="text-sm text-center text-slate-500 mt-2">
+            Directly access contacts on supported mobile devices (Android Chrome).
+          </p>
+          {!isSupported && (
+            <span className="mt-4 text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded">Not Supported on this Browser</span>
+          )}
+        </button>
+
+        {/* File Upload Option */}
+        <label className="flex flex-col items-center p-8 rounded-2xl border-2 border-green-100 bg-green-50 hover:border-green-300 hover:shadow-md cursor-pointer transition-all relative">
+          <input 
+            type="file" 
+            accept=".vcf" 
+            onChange={handleFileUpload} 
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+          <div className="bg-green-100 p-4 rounded-full mb-4">
+            <FileText className="w-8 h-8 text-green-600" />
+          </div>
+          <h3 className="font-semibold text-lg text-slate-800">Upload .VCF</h3>
+          <p className="text-sm text-center text-slate-500 mt-2">
+            Export contacts from your phone settings to a file, then upload here.
+          </p>
+        </label>
+      </div>
+
+      {error && (
+        <div className="flex items-center space-x-2 text-red-600 bg-red-50 px-4 py-2 rounded-lg">
+          <AlertCircle size={20} />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <div className="text-xs text-slate-400 max-w-sm text-center">
+        Privacy Note: Your contacts are processed entirely in your browser. None of your data is sent to any server.
+      </div>
+    </div>
+  );
+
+  const ResultsScreen = () => (
+    <div className="flex flex-col h-full max-w-3xl mx-auto p-4 space-y-6">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Cleaning Complete!</h2>
+          <p className="text-slate-500">
+            We analyzed <span className="font-mono font-bold text-slate-700">{rawContacts.length}</span> contacts.
+          </p>
+        </div>
+        <div className="flex items-center space-x-6">
+           <div className="text-center">
+             <div className="text-3xl font-bold text-red-500">{duplicatesFound}</div>
+             <div className="text-xs text-slate-400 uppercase tracking-wide">Duplicates</div>
+           </div>
+           <div className="h-10 w-px bg-slate-200"></div>
+           <div className="text-center">
+             <div className="text-3xl font-bold text-green-600">{mergedContacts.length}</div>
+             <div className="text-xs text-slate-400 uppercase tracking-wide">Final Count</div>
+           </div>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-start gap-3">
+        <AlertCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+        <div className="text-sm text-blue-800">
+          <strong>Important:</strong> Web apps cannot delete contacts from your phone directly. 
+          To finish, download the cleaned file below, then delete your old contacts and import this new file.
+        </div>
+      </div>
+
+      <button 
+        onClick={downloadCleaned}
+        className="w-full bg-slate-900 hover:bg-slate-800 text-white p-4 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-colors shadow-lg shadow-slate-200"
+      >
+        <Download className="w-5 h-5" />
+        <span>Download Cleaned Contacts (.vcf)</span>
+      </button>
+
+      {/* Preview List */}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-[300px]">
+        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Merged Preview</h3>
+        <div className="flex-1 overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-sm">
+          {mergedContacts.map((contact, idx) => (
+            <div key={idx} className="flex items-center justify-between p-4 border-b border-slate-100 last:border-0 hover:bg-slate-50">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">
+                  {contact.name.charAt(0)}
+                </div>
+                <div>
+                  <div className="font-medium text-slate-800">{contact.name}</div>
+                  <div className="text-sm text-slate-500 font-mono">
+                    {Array.isArray(contact.tel) ? contact.tel[0] : contact.tel}
+                  </div>
+                </div>
+              </div>
+              {contact._mergeCount > 1 && (
+                <div className="flex items-center space-x-1 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                  <Merge size={12} />
+                  <span>Merged {contact._mergeCount}</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <button 
+        onClick={() => {
+          setStep('import');
+          setRawContacts([]);
+          setMergedContacts([]);
+          setDuplicatesFound(0);
+        }}
+        className="text-slate-400 text-sm hover:text-slate-600 underline"
+      >
+        Start Over
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+      {/* Header */}
+      <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center space-x-2">
+          <div className="bg-indigo-600 p-2 rounded-lg">
+            <Users className="text-white w-5 h-5" />
+          </div>
+          <h1 className="font-bold text-xl tracking-tight">ContactClean</h1>
+        </div>
+        <div className="text-xs font-medium bg-slate-100 text-slate-500 px-3 py-1 rounded-full">
+          v1.0
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="container mx-auto max-w-4xl min-h-[calc(100vh-80px)]">
+        {step === 'import' && <ImportScreen />}
+        {step === 'processing' && (
+          <div className="flex flex-col items-center justify-center h-96 space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <p className="text-slate-500 font-medium">Processing contacts...</p>
+          </div>
+        )}
+        {step === 'results' && <ResultsScreen />}
+      </main>
+    </div>
+  );
+}
+
