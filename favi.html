@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Favicon Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .drop-zone {
+            transition: all 0.3s ease;
+            border: 2px dashed #cbd5e1;
+        }
+        .drop-zone.drag-over {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
+
+    <div class="max-w-3xl mx-auto px-4 py-12">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-extrabold text-slate-800 mb-4">Favicon Generator</h1>
+            <p class="text-lg text-slate-600">Convert any image into a professional <span class="font-mono bg-slate-200 px-1 rounded">favicon.ico</span> containing 16x16, 32x32, and 48x48 layers.</p>
+        </header>
+
+        <main class="bg-white rounded-2xl shadow-xl p-8">
+            <!-- Upload Area -->
+            <div id="dropZone" class="drop-zone rounded-xl p-12 text-center cursor-pointer mb-8">
+                <input type="file" id="fileInput" class="hidden" accept="image/*">
+                <div id="uploadPrompt">
+                    <div class="mb-4">
+                        <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="C4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-slate-600">Click to upload or drag and drop your image</p>
+                    <p class="text-xs text-slate-400 mt-2">PNG, JPG, or SVG recommended</p>
+                </div>
+                <div id="previewArea" class="hidden flex flex-col items-center">
+                    <img id="imgPreview" class="max-h-48 rounded shadow-sm mb-4" src="" alt="Preview">
+                    <p id="fileName" class="text-sm font-medium text-slate-700"></p>
+                </div>
+            </div>
+
+            <!-- Action Area -->
+            <div id="actionArea" class="hidden">
+                <div class="flex items-center justify-between bg-slate-50 p-4 rounded-lg mb-6">
+                    <div class="flex gap-4">
+                        <div class="text-center">
+                            <div class="w-12 h-12 bg-white border border-slate-200 rounded flex items-center justify-center mb-1">
+                                <div id="preview16" class="w-[16px] h-[16px] bg-contain bg-no-repeat bg-center"></div>
+                            </div>
+                            <span class="text-[10px] text-slate-500 uppercase font-bold">16x16</span>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-12 h-12 bg-white border border-slate-200 rounded flex items-center justify-center mb-1">
+                                <div id="preview32" class="w-[32px] h-[32px] bg-contain bg-no-repeat bg-center"></div>
+                            </div>
+                            <span class="text-[10px] text-slate-500 uppercase font-bold">32x32</span>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-12 h-12 bg-white border border-slate-200 rounded flex items-center justify-center mb-1">
+                                <div id="preview48" class="w-[48px] h-[48px] bg-contain bg-no-repeat bg-center"></div>
+                            </div>
+                            <span class="text-[10px] text-slate-500 uppercase font-bold">48x48</span>
+                        </div>
+                    </div>
+                    <button id="generateBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition shadow-lg shadow-blue-200">
+                        Download .ico
+                    </button>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-6">
+                <h3 class="text-sm font-bold text-slate-800 mb-2 uppercase tracking-wider">Why use this?</h3>
+                <ul class="text-sm text-slate-600 space-y-2">
+                    <li class="flex items-start">
+                        <span class="text-green-500 mr-2">✓</span>
+                        <span>Bundles 3 sizes into a single file for compatibility across all browsers and OS.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-green-500 mr-2">✓</span>
+                        <span>Prevents the "blurry tab" effect by providing 1:1 pixel mapped layers.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-green-500 mr-2">✓</span>
+                        <span>Uses standard Windows Icon binary structures.</span>
+                    </li>
+                </ul>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewArea = document.getElementById('previewArea');
+        const uploadPrompt = document.getElementById('uploadPrompt');
+        const imgPreview = document.getElementById('imgPreview');
+        const actionArea = document.getElementById('actionArea');
+        const generateBtn = document.getElementById('generateBtn');
+
+        let sourceImage = null;
+
+        // UI Event Listeners
+        dropZone.onclick = () => fileInput.click();
+        
+        dropZone.ondragover = (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        };
+
+        dropZone.ondragleave = () => dropZone.classList.remove('drag-over');
+
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            handleFile(e.dataTransfer.files[0]);
+        };
+
+        fileInput.onchange = (e) => handleFile(e.target.files[0]);
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    sourceImage = img;
+                    imgPreview.src = e.target.result;
+                    uploadPrompt.classList.add('hidden');
+                    previewArea.classList.remove('hidden');
+                    actionArea.classList.remove('hidden');
+                    document.getElementById('fileName').textContent = file.name;
+                    
+                    // Update small previews
+                    ['preview16', 'preview32', 'preview48'].forEach(id => {
+                        document.getElementById(id).style.backgroundImage = `url(${e.target.result})`;
+                    });
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ICO Generation Logic
+        generateBtn.onclick = async () => {
+            if (!sourceImage) return;
+
+            const sizes = [16, 32, 48];
+            const pngBlobs = await Promise.all(sizes.map(size => createPngBlob(sourceImage, size)));
+            
+            const icoBuffer = createIcoFromPngs(pngBlobs);
+            const blob = new Blob([icoBuffer], { type: 'image/x-icon' });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'favicon.ico';
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        function createPngBlob(img, size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // High quality scaling
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            ctx.drawImage(img, 0, 0, size, size);
+            
+            return new Promise(resolve => {
+                canvas.toBlob(blob => {
+                    blob.arrayBuffer().then(resolve);
+                }, 'image/png');
+            });
+        }
+
+        /**
+         * ICO Structure:
+         * - ICONDIR (6 bytes)
+         * - ICONDIRENTRY (16 bytes per image)
+         * - Image Data (The PNG files)
+         */
+        function createIcoFromPngs(pngBuffers) {
+            const count = pngBuffers.length;
+            const dirSize = 6 + (16 * count);
+            let totalSize = dirSize;
+            
+            pngBuffers.forEach(buf => totalSize += buf.byteLength);
+            
+            const buffer = new ArrayBuffer(totalSize);
+            const view = new DataView(buffer);
+            
+            // ICONDIR
+            view.setUint16(0, 0, true);    // Reserved (0)
+            view.setUint16(2, 1, true);    // Type (1 for ICO)
+            view.setUint16(4, count, true); // Image count
+            
+            let offset = dirSize;
+            
+            pngBuffers.forEach((buf, i) => {
+                const size = [16, 32, 48][i];
+                const entryOffset = 6 + (i * 16);
+                
+                // ICONDIRENTRY
+                view.setUint8(entryOffset + 0, size);      // Width
+                view.setUint8(entryOffset + 1, size);      // Height
+                view.setUint8(entryOffset + 2, 0);         // Color count (0 for >256)
+                view.setUint8(entryOffset + 3, 0);         // Reserved
+                view.setUint16(entryOffset + 4, 1, true);  // Color planes
+                view.setUint16(entryOffset + 6, 32, true); // Bits per pixel
+                view.setUint32(entryOffset + 8, buf.byteLength, true); // Image size
+                view.setUint32(entryOffset + 12, offset, true);       // Image offset
+                
+                // Write image data
+                const uint8 = new Uint8Array(buffer, offset, buf.byteLength);
+                uint8.set(new Uint8Array(buf));
+                
+                offset += buf.byteLength;
+            });
+            
+            return buffer;
+        }
+    </script>
+</body>
+</html>
+
