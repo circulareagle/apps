@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Favicon Generator</title>
+    <title>Favicon Pro Generator - Multi-Layer ICO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -88,7 +88,7 @@
                     <h2 class="text-xl font-bold mb-4 text-white">Ready-to-Use HTML</h2>
                     <div class="relative">
                         <pre id="codeBlock" class="bg-gray-900 p-4 rounded-xl text-[10px] md:text-xs text-green-400 overflow-x-auto h-48 border border-gray-700"></pre>
-                        <button onclick="copyCode()" class="absolute top-2 right-2 px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-[10px] rounded-lg">Copy</button>
+                        <button id="copyBtn" class="absolute top-2 right-2 px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-[10px] rounded-lg">Copy</button>
                     </div>
                 </div>
             </div>
@@ -104,10 +104,10 @@
         const themeColorHex = document.getElementById('themeColorHex');
         const appName = document.getElementById('appName');
         const shortName = document.getElementById('shortName');
+        const copyBtn = document.getElementById('copyBtn');
 
         let sourceImg = null;
 
-        // Sync colors
         themeColor.addEventListener('input', (e) => { themeColorHex.value = e.target.value; updateHTML(); });
         themeColorHex.addEventListener('input', (e) => { themeColor.value = e.target.value; updateHTML(); });
 
@@ -159,112 +159,136 @@
             return new Promise(res => canvas.toBlob(res, 'image/png'));
         }
 
-        // Logic for TRUE Binary ICO generation
+        /**
+         * Logic for TRUE Binary ICO generation
+         * Corrects the byte-offsets and directory structure for multiple layers
+         */
         function createIcoFile(pngBuffers) {
             const HEADER_SIZE = 6;
-            const ENTRY_SIZE = 16;
+            const DIRECTORY_SIZE = 16;
             const numImages = pngBuffers.length;
-            let totalDataSize = 0;
             
-            pngBuffers.forEach(b => totalDataSize += b.byteLength);
+            let totalPngDataSize = 0;
+            pngBuffers.forEach(png => totalPngDataSize += png.byteLength);
             
-            const buffer = new ArrayBuffer(HEADER_SIZE + (ENTRY_SIZE * numImages) + totalDataSize);
+            const buffer = new ArrayBuffer(HEADER_SIZE + (DIRECTORY_SIZE * numImages) + totalPngDataSize);
             const view = new DataView(buffer);
             const uint8 = new Uint8Array(buffer);
             
-            // ICO Header
+            // 1. ICO Header
             view.setUint16(0, 0, true);  // Reserved
             view.setUint16(2, 1, true);  // Type 1 (ICO)
             view.setUint16(4, numImages, true);
             
-            let offset = HEADER_SIZE + (ENTRY_SIZE * numImages);
-            let entryPos = HEADER_SIZE;
+            // Offset starts after Header and all Directory Entries
+            let currentDataOffset = HEADER_SIZE + (DIRECTORY_SIZE * numImages);
+            let directoryPosition = HEADER_SIZE;
             
             pngBuffers.forEach(png => {
-                const imgSize = Math.sqrt(png.byteLength); // Approximation for metadata
-                // Since these are PNGs inside ICO, width/height are 0 for 256px, otherwise actual
-                const width = png.width || 0; 
+                const width = png.width >= 256 ? 0 : png.width;
+                const height = png.height >= 256 ? 0 : png.height;
+
+                // 2. Directory Entry
+                view.setUint8(directoryPosition, width);
+                view.setUint8(directoryPosition + 1, height);
+                view.setUint8(directoryPosition + 2, 0); // Palette
+                view.setUint8(directoryPosition + 3, 0); // Reserved
+                view.setUint16(directoryPosition + 4, 1, true); // Planes
+                view.setUint16(directoryPosition + 6, 32, true); // Bits Per Pixel
+                view.setUint32(directoryPosition + 8, png.byteLength, true); // Image Size
+                view.setUint32(directoryPosition + 12, currentDataOffset, true); // Offset to Data
                 
-                view.setUint8(entryPos, png.width);
-                view.setUint8(entryPos + 1, png.height);
-                view.setUint8(entryPos + 2, 0); // Palette
-                view.setUint8(entryPos + 3, 0); // Reserved
-                view.setUint16(entryPos + 4, 1, true); // Planes
-                view.setUint16(entryPos + 6, 32, true); // BPP
-                view.setUint32(entryPos + 8, png.byteLength, true); // Size
-                view.setUint32(entryPos + 12, offset, true); // Offset
+                // 3. Write actual PNG data
+                uint8.set(new Uint8Array(png), currentDataOffset);
                 
-                uint8.set(new Uint8Array(png), offset);
-                
-                offset += png.byteLength;
-                entryPos += ENTRY_SIZE;
+                // Increment positions for next loop
+                currentDataOffset += png.byteLength;
+                directoryPosition += DIRECTORY_SIZE;
             });
             
             return new Blob([buffer], { type: 'image/x-icon' });
         }
 
         generateBtn.addEventListener('click', async () => {
-            generateBtn.innerText = "Processing...";
-            const zip = new JSZip();
-            const imgFolder = zip.folder("assets").folder("images");
+            const originalText = generateBtn.innerText;
+            generateBtn.innerText = "Processing Layers...";
+            generateBtn.disabled = true;
             
-            const sizes = [16, 32, 48, 180, 192, 512];
-            const pngDataForIco = [];
-
-            for (const s of sizes) {
-                const blob = await createBlob(s);
-                const arrayBuffer = await blob.arrayBuffer();
+            try {
+                const zip = new JSZip();
+                const imgFolder = zip.folder("assets").folder("images");
                 
-                let filename = `favicon-${s}x16.png`; // Fallback name
-                if (s === 16) filename = "favicon-16x16.png";
-                if (s === 32) filename = "favicon-32x32.png";
-                if (s === 48) filename = "favicon-48x48.png";
-                if (s === 180) filename = "apple-touch-icon.png";
-                if (s === 192) filename = "icon-192.png";
-                if (s === 512) filename = "icon-512.png";
-                
-                imgFolder.file(filename, blob);
+                const sizes = [16, 32, 48, 180, 192, 512];
+                const pngDataForIco = [];
 
-                // Add 16, 32, 48 to the ICO buffer
-                if ([16, 32, 48].includes(s)) {
-                    arrayBuffer.width = s;
-                    arrayBuffer.height = s;
-                    pngDataForIco.push(arrayBuffer);
+                for (const s of sizes) {
+                    const blob = await createBlob(s);
+                    const arrayBuffer = await blob.arrayBuffer();
+                    
+                    let filename = `icon-${s}.png`; 
+                    if (s === 16) filename = "favicon-16x16.png";
+                    if (s === 32) filename = "favicon-32x32.png";
+                    if (s === 48) filename = "favicon-48x48.png";
+                    if (s === 180) filename = "apple-touch-icon.png";
+                    if (s === 192) filename = "icon-192.png";
+                    if (s === 512) filename = "icon-512.png";
+                    
+                    imgFolder.file(filename, blob);
+
+                    // Multi-layer ICO traditionally includes 16, 32, and 48
+                    if ([16, 32, 48].includes(s)) {
+                        arrayBuffer.width = s;
+                        arrayBuffer.height = s;
+                        pngDataForIco.push(arrayBuffer);
+                    }
                 }
+
+                // Generate the Multi-Layer ICO
+                const finalIco = createIcoFile(pngDataForIco);
+                zip.file("favicon.ico", finalIco);
+
+                // Create Manifest
+                const manifest = {
+                    name: appName.value || "My Site",
+                    short_name: shortName.value || "Site",
+                    icons: [
+                        { src: "./assets/images/icon-192.png", sizes: "192x192", type: "image/png" },
+                        { src: "./assets/images/icon-512.png", sizes: "512x512", type: "image/png" }
+                    ],
+                    theme_color: themeColorHex.value,
+                    background_color: "#ffffff",
+                    display: "standalone",
+                    start_url: "./index.html"
+                };
+                zip.file("site.webmanifest", JSON.stringify(manifest, null, 2));
+
+                const content = await zip.generateAsync({type:"blob"});
+                saveAs(content, "favicon_package.zip");
+            } catch (err) {
+                console.error(err);
+                alert("Generation failed. Check console for details.");
+            } finally {
+                generateBtn.innerText = originalText;
+                generateBtn.disabled = false;
             }
-
-            // Create ICO
-            const finalIco = createIcoFile(pngDataForIco);
-            zip.file("favicon.ico", finalIco);
-
-            // Create Manifest
-            const manifest = {
-                name: appName.value || "My Site",
-                short_name: shortName.value || "Site",
-                icons: [
-                    { src: "./assets/images/icon-192.png", sizes: "192x192", type: "image/png" },
-                    { src: "./assets/images/icon-512.png", sizes: "512x512", type: "image/png" }
-                ],
-                theme_color: themeColorHex.value,
-                background_color: "#ffffff",
-                display: "standalone",
-                start_url: "./index.html"
-            };
-            zip.file("site.webmanifest", JSON.stringify(manifest, null, 2));
-
-            const content = await zip.generateAsync({type:"blob"});
-            saveAs(content, "favicon_package.zip");
-            generateBtn.innerText = "Download Package";
         });
 
-        function copyCode() {
-            const range = document.createRange();
-            range.selectNode(codeBlock);
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
-            document.execCommand("copy");
-            alert("Code copied!");
-        }
+        copyBtn.addEventListener('click', () => {
+            const text = codeBlock.innerText;
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                const oldText = copyBtn.innerText;
+                copyBtn.innerText = "Copied!";
+                setTimeout(() => copyBtn.innerText = oldText, 2000);
+            } catch (err) {
+                console.error('Fallback copy failed', err);
+            }
+            document.body.removeChild(textArea);
+        });
     </script>
 </body>
 </html>
