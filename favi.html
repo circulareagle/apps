@@ -158,45 +158,44 @@
         }
 
         function createIcoFromPngs(pngBuffers, sizes) {
-            const count = pngBuffers.length;
-            const ICONDIR_SIZE = 6;
-            const ICONDIRENTRY_SIZE = 16;
-            const dirSize = ICONDIR_SIZE + (ICONDIRENTRY_SIZE * count);
-            
-            let totalSize = dirSize;
-            pngBuffers.forEach(buf => totalSize += buf.byteLength);
-            
-            const buffer = new ArrayBuffer(totalSize);
-            const view = new DataView(buffer);
-            
-            // ICONDIR: Reserved(0), Type(1 for ICO), Count
-            view.setUint16(0, 0, true);
-            view.setUint16(2, 1, true);
-            view.setUint16(4, count, true);
-            
-            let currentDataOffset = dirSize;
-            
-            pngBuffers.forEach((buf, i) => {
-                const size = sizes[i];
-                const entryOffset = ICONDIR_SIZE + (i * ICONDIRENTRY_SIZE);
-                
-                // ICONDIRENTRY
-                // Width/Height: use 0 if size >= 256
-                view.setUint8(entryOffset + 0, size >= 256 ? 0 : size);
-                view.setUint8(entryOffset + 1, size >= 256 ? 0 : size);
-                view.setUint8(entryOffset + 2, 0); // Palette
-                view.setUint8(entryOffset + 3, 0); // Reserved
-                view.setUint16(entryOffset + 4, 1, true); // Planes
-                view.setUint16(entryOffset + 6, 32, true); // BPP
-                view.setUint32(entryOffset + 8, buf.byteLength, true); // Size of data
-                view.setUint32(entryOffset + 12, currentDataOffset, true); // Offset to data
-                
-                // Copy PNG data into main buffer
-                new Uint8Array(buffer, currentDataOffset, buf.byteLength).set(new Uint8Array(buf));
-                currentDataOffset += buf.byteLength;
-            });
-            
-            return buffer;
+    const count = pngBuffers.length;
+    const ICONDIR_SIZE = 6;
+    const ICONDIRENTRY_SIZE = 16;
+    const dirSize = ICONDIR_SIZE + (ICONDIRENTRY_SIZE * count);
+    
+    let totalSize = dirSize;
+    pngBuffers.forEach(buf => totalSize += buf.byteLength);
+    
+    const buffer = new ArrayBuffer(totalSize);
+    const view = new DataView(buffer);
+    
+    // ICONDIR: Reserved(0), Type(1 for ICO), Count
+    view.setUint16(0, 0, true);
+    view.setUint16(2, 1, true);
+    view.setUint16(4, count, true);
+    
+    let currentDataOffset = dirSize;
+    
+    pngBuffers.forEach((buf, i) => {
+        const size = sizes[i];
+        const entryOffset = ICONDIR_SIZE + (i * ICONDIRENTRY_SIZE);
+        
+        // ICONDIRENTRY (PNG-specific)
+        view.setUint8(entryOffset + 0, size >= 256 ? 0 : size); // Width
+        view.setUint8(entryOffset + 1, size >= 256 ? 0 : size); // Height
+        view.setUint8(entryOffset + 2, 0); // Colors (0 for PNG)
+        view.setUint8(entryOffset + 3, 0); // Reserved
+        view.setUint16(entryOffset + 4, 0, true); // Planes (0 for PNG)
+        view.setUint16(entryOffset + 6, 0, true); // BPP (0 for PNG)
+        view.setUint32(entryOffset + 8, buf.byteLength, true); // Size of data
+        view.setUint32(entryOffset + 12, currentDataOffset, true); // Offset to data
+        
+        // Copy PNG data
+        new Uint8Array(buffer, currentDataOffset, buf.byteLength).set(new Uint8Array(buf));
+        currentDataOffset += buf.byteLength;
+    });
+    
+    return buffer;
         }
     </script>
 </body>
