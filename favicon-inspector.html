@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICO Layer Inspector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 font-sans">
+
+    <div class="max-w-md mx-auto">
+        <header class="py-8 text-center">
+            <h1 class="text-2xl font-bold text-blue-400">Favicon Inspector</h1>
+            <p class="text-slate-400 text-sm mt-2">Upload an .ico to see its internal layers</p>
+        </header>
+
+        <main class="space-y-6">
+            <!-- Upload Box -->
+            <div id="dropZone" class="border-2 border-dashed border-slate-700 rounded-2xl p-8 text-center bg-slate-800 transition-colors active:bg-slate-700">
+                <input type="file" id="fileInput" class="hidden" accept=".ico">
+                <div id="prompt">
+                    <svg class="w-10 h-10 mx-auto mb-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <p class="font-medium">Select .ico File</p>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div id="results" class="hidden space-y-4">
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">File Summary</h2>
+                    <p id="layerCount" class="text-lg font-semibold"></p>
+                </div>
+
+                <div id="layerList" class="space-y-3">
+                    <!-- Layers will be injected here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const results = document.getElementById('results');
+        const layerCountText = document.getElementById('layerCount');
+        const layerList = document.getElementById('layerList');
+
+        dropZone.onclick = () => fileInput.click();
+
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) parseIco(file);
+        };
+
+        async function parseIco(file) {
+            const buffer = await file.arrayBuffer();
+            const view = new DataView(buffer);
+            
+            // Validate ICO Header
+            if (view.getUint16(0, true) !== 0 || view.getUint16(2, true) !== 1) {
+                alert("Not a valid .ico file");
+                return;
+            }
+
+            const count = view.getUint16(4, true);
+            layerCountText.innerText = `Found ${count} Layer${count === 1 ? '' : 's'}`;
+            layerList.innerHTML = '';
+            results.classList.remove('hidden');
+
+            for (let i = 0; i < count; i++) {
+                const entryOffset = 6 + (i * 16);
+                let w = view.getUint8(entryOffset + 0);
+                let h = view.getUint8(entryOffset + 1);
+                const size = view.getUint32(entryOffset + 8, true);
+                const offset = view.getUint32(entryOffset + 12, true);
+
+                if (w === 0) w = 256;
+                if (h === 0) h = 256;
+
+                const imgData = buffer.slice(offset, offset + size);
+                const blob = new Blob([imgData], { type: 'image/png' });
+                const url = URL.createObjectURL(blob);
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center gap-4";
+                card.innerHTML = `
+                    <div class="w-16 h-16 bg-slate-900 rounded border border-slate-700 flex items-center justify-center overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+                        <img src="${url}" style="width: ${w}px; max-width: 100%; image-rendering: pixelated;">
+                    </div>
+                    <div>
+                        <p class="font-bold text-blue-400">${w} × ${h}</p>
+                        <p class="text-xs text-slate-500">Offset: ${offset} | Size: ${Math.round(size/1024 * 10)/10} KB</p>
+                    </div>
+                `;
+                layerList.appendChild(card);
+            }
+        }
+    </script>
+</body>
+</html>
+
