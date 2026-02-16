@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Favicon Pro Generator - True Multi-Layer</title>
+    <title>Ultimate Favicon Pro Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -13,96 +13,83 @@
         .dashed-border { background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='12' ry='12' stroke='%23374151' stroke-width='2' stroke-dasharray='8%2c 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e"); }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8">
+<body class="bg-gray-950 text-gray-100 min-h-screen p-4 md:p-8">
 
     <div class="max-w-5xl mx-auto">
-        <header class="mb-10 text-center">
-            <h1 class="text-4xl font-extrabold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent mb-2">Favicon Pro Generator</h1>
-            <p class="text-slate-400">Generates a standard compliant Multi-Resolution (.ico) file</p>
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-extrabold text-blue-500 mb-2">Favicon Pro Generator</h1>
+            <p class="text-gray-400">Multi-Layer ICO (16/32/48) & Structured Asset Folders</p>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="space-y-6">
-                <!-- Image Upload -->
-                <div class="bg-slate-900 p-6 rounded-2xl shadow-2xl border border-slate-800">
+                <!-- Step 1: Image Upload -->
+                <div class="bg-gray-900 p-6 rounded-2xl shadow-xl border border-gray-800">
                     <h2 class="text-xl font-bold mb-4 flex items-center">
-                        <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs mr-3">1</span> 
-                        Upload Source
+                        <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2">1</span> 
+                        Source Image
                     </h2>
-                    <div id="dropZone" class="dashed-border rounded-2xl h-48 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-800 transition-all relative group">
+                    <div id="dropZone" class="dashed-border rounded-xl h-44 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-800 transition relative group">
                         <input type="file" id="fileInput" accept="image/png, image/jpeg" class="absolute inset-0 opacity-0 cursor-pointer z-10">
-                        <div id="uploadUI" class="text-center pointer-events-none group-hover:scale-105 transition-transform">
-                            <svg class="w-12 h-12 mx-auto mb-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                            <p class="text-sm text-slate-400 font-semibold">Drop high-res PNG or JPG</p>
-                            <p class="text-xs text-slate-500">Recommended: 512x512px</p>
+                        <div id="uploadUI" class="text-center pointer-events-none">
+                            <svg class="w-10 h-10 mx-auto mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <p class="text-sm text-gray-400">Drop high-res PNG (512x512 recommended)</p>
                         </div>
-                        <img id="previewImage" class="absolute inset-0 w-full h-full object-contain p-6 hidden" />
+                        <img id="previewImage" class="absolute inset-0 w-full h-full object-contain p-4 hidden" />
                     </div>
                 </div>
 
-                <!-- Branding -->
-                <div class="bg-slate-900 p-6 rounded-2xl shadow-2xl border border-slate-800">
+                <!-- Step 2: Site Info -->
+                <div class="bg-gray-900 p-6 rounded-2xl shadow-xl border border-gray-800">
                     <h2 class="text-xl font-bold mb-4 flex items-center">
-                        <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs mr-3">2</span> 
-                        App Details
+                        <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2">2</span> 
+                        Metadata & Assets
                     </h2>
-                    <div class="grid grid-cols-1 gap-5">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Full Name</label>
-                                <input type="text" id="appName" placeholder="Brand Name" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Short Name</label>
-                                <input type="text" id="shortName" placeholder="Brand" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                            </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Brand Name</label>
+                            <input type="text" id="appName" placeholder="My Company" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Theme Color</label>
-                            <div class="flex gap-3">
-                                <div class="relative w-14 h-12">
-                                    <input type="color" id="themeColor" value="#3b82f6" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                                    <div id="colorPreview" class="w-full h-full rounded-xl border border-slate-700 pointer-events-none" style="background-color: #3b82f6;"></div>
-                                </div>
-                                <input type="text" id="themeColorHex" value="#3B82F6" class="flex-grow bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white font-mono uppercase focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Theme Color</label>
+                            <div class="flex">
+                                <input type="color" id="themeColor" value="#2563eb" class="h-10 w-12 rounded-l-lg border-r-0 border-gray-700 bg-gray-800 cursor-pointer">
+                                <input type="text" id="themeColorHex" value="#2563EB" class="flex-grow bg-gray-800 border border-gray-700 rounded-r-lg px-3 py-2 text-white font-mono uppercase">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <button id="generateBtn" disabled class="w-full py-5 rounded-2xl bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600 text-white font-extrabold shadow-lg transition-all transform active:scale-95 uppercase tracking-widest">
-                    Generate Favicon Bundle
+                <button id="generateBtn" disabled class="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg transition duration-200 disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wider">
+                    Generate Package
                 </button>
             </div>
 
-            <!-- Previews -->
             <div class="space-y-6">
-                <div class="bg-slate-900 p-6 rounded-2xl shadow-2xl border border-slate-800">
-                    <h2 class="text-xl font-bold mb-4 flex items-center text-slate-300">Bundle Contents</h2>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                            <span class="font-mono text-sm text-blue-400">favicon.ico</span>
-                            <span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded">16, 32, 48px Layers</span>
-                        </div>
-                        <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                            <span class="font-mono text-sm text-emerald-400">site.webmanifest</span>
-                            <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded">JSON</span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="p-3 bg-slate-950/50 rounded-xl border border-slate-800 font-mono text-[10px] text-slate-500 text-center">favicon-16x16.png</div>
-                            <div class="p-3 bg-slate-950/50 rounded-xl border border-slate-800 font-mono text-[10px] text-slate-500 text-center">favicon-32x32.png</div>
-                            <div class="p-3 bg-slate-950/50 rounded-xl border border-slate-800 font-mono text-[10px] text-slate-500 text-center">favicon-48x48.png</div>
-                            <div class="p-3 bg-slate-950/50 rounded-xl border border-slate-800 font-mono text-[10px] text-slate-500 text-center">apple-touch-icon.png</div>
-                        </div>
+                <!-- Package Summary -->
+                <div class="bg-gray-900 p-6 rounded-2xl shadow-xl border border-gray-800">
+                    <h2 class="text-xl font-bold mb-4 text-white">Package Structure</h2>
+                    <div class="font-mono text-[11px] space-y-1">
+                        <div class="flex items-center text-blue-400"><svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg> Root</div>
+                        <div class="ml-4 text-gray-400">├── favicon.ico <span class="text-[10px] text-gray-600">(16, 32, 48px combined)</span></div>
+                        <div class="ml-4 text-gray-400">├── site.webmanifest</div>
+                        <div class="ml-4 flex items-center text-blue-400"><svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg> assets/images/</div>
+                        <div class="ml-10 text-gray-500">├── favicon-16x16.png</div>
+                        <div class="ml-10 text-gray-500">├── favicon-32x32.png</div>
+                        <div class="ml-10 text-gray-500">├── favicon-48x48.png</div>
+                        <div class="ml-10 text-gray-500">├── apple-touch-icon.png</div>
+                        <div class="ml-10 text-gray-500">├── icon-192.png</div>
+                        <div class="ml-10 text-gray-500">└── icon-512.png</div>
                     </div>
                 </div>
 
-                <div class="bg-slate-900 p-6 rounded-2xl shadow-2xl border border-slate-800 flex flex-col h-[340px]">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-xl font-bold text-slate-300">HTML Tags</h2>
-                        <button id="copyBtn" class="text-xs font-bold text-blue-400 hover:text-blue-300 px-3 py-1 bg-blue-500/10 rounded-lg transition-colors">Copy Code</button>
+                <!-- Live HTML Preview -->
+                <div class="bg-gray-900 p-6 rounded-2xl shadow-xl border border-gray-800 flex flex-col h-[280px]">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-xl font-bold text-white">HTML Snippet</h2>
+                        <button id="copyBtn" class="text-xs bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded text-blue-400">Copy</button>
                     </div>
-                    <pre id="codeBlock" class="bg-slate-950 p-4 rounded-xl text-[11px] text-emerald-500 font-mono overflow-auto flex-grow border border-slate-800"></pre>
+                    <pre id="codeBlock" class="bg-black/50 p-4 rounded-xl text-[10px] md:text-xs text-green-400 overflow-auto flex-grow border border-gray-800"></pre>
                 </div>
             </div>
         </div>
@@ -115,26 +102,16 @@
         const codeBlock = document.getElementById('codeBlock');
         const themeColor = document.getElementById('themeColor');
         const themeColorHex = document.getElementById('themeColorHex');
-        const colorPreview = document.getElementById('colorPreview');
         const appName = document.getElementById('appName');
-        const shortName = document.getElementById('shortName');
         const copyBtn = document.getElementById('copyBtn');
 
         let sourceImg = null;
 
-        // Sync inputs
-        themeColor.addEventListener('input', (e) => {
-            const val = e.target.value.toUpperCase();
-            themeColorHex.value = val;
-            colorPreview.style.backgroundColor = val;
-            updateHTML();
-        });
-        themeColorHex.addEventListener('input', (e) => {
-            const val = e.target.value;
-            if(/^#[0-9A-F]{6}$/i.test(val)) {
-                themeColor.value = val;
-                colorPreview.style.backgroundColor = val;
-                updateHTML();
+        themeColor.addEventListener('input', (e) => { themeColorHex.value = e.target.value.toUpperCase(); updateHTML(); });
+        themeColorHex.addEventListener('input', (e) => { 
+            if(/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+                themeColor.value = e.target.value; 
+                updateHTML(); 
             }
         });
 
@@ -158,23 +135,23 @@
 
         function updateHTML() {
             const color = themeColorHex.value;
-            codeBlock.innerText = `<!-- Multi-layer ICO for legacy browsers -->
-<link rel="icon" href="/favicon.ico" sizes="any">
+            codeBlock.innerText = `<!-- Legacy/Root Fallback -->
+<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
 
-<!-- SVG or PNGs for modern browsers -->
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+<!-- Modern PNGs -->
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/images/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/images/favicon-48x48.png">
 
-<!-- Apple Touch Icon -->
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<!-- iOS/Safari -->
+<link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png">
 
-<!-- PWA / Android -->
+<!-- PWA & Android -->
 <link rel="manifest" href="/site.webmanifest">
 <meta name="theme-color" content="${color}">`;
         }
 
-        async function createPngData(size) {
+        async function createBuffer(size) {
             const canvas = document.createElement('canvas');
             canvas.width = size;
             canvas.height = size;
@@ -183,104 +160,94 @@
             ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(sourceImg, 0, 0, size, size);
             const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-            const buffer = await blob.arrayBuffer();
-            return {
-                width: size,
-                height: size,
-                data: buffer
-            };
+            return await blob.arrayBuffer();
         }
 
         /**
-         * TRUE MULTI-LAYER ICO GENERATOR
-         * Creates a single file with a directory pointing to multiple image buffers
+         * BINARY MULTI-LAYER ICO GENERATOR
+         * Correctly bundles 16, 32, and 48px images into ONE .ico file
          */
-        function assembleMultiLayerIco(imageEntries) {
-            const ICO_HEADER_SIZE = 6;
-            const ICON_DIR_ENTRY_SIZE = 16;
+        function buildIco(layers) {
+            const HEADER_SIZE = 6;
+            const ENTRY_SIZE = 16;
+            const numIcons = layers.length;
             
-            const numIcons = imageEntries.length;
-            const totalDataSize = imageEntries.reduce((sum, img) => sum + img.data.byteLength, 0);
+            let dataSize = 0;
+            layers.forEach(l => dataSize += l.byteLength);
             
-            // Allocate the full buffer
-            const totalSize = ICO_HEADER_SIZE + (ICON_DIR_ENTRY_SIZE * numIcons) + totalDataSize;
-            const buffer = new ArrayBuffer(totalSize);
+            const buffer = new ArrayBuffer(HEADER_SIZE + (numIcons * ENTRY_SIZE) + dataSize);
             const view = new DataView(buffer);
             const uint8 = new Uint8Array(buffer);
             
-            // 1. Write File Header
-            view.setUint16(0, 0, true);   // Reserved
-            view.setUint16(2, 1, true);   // Type: Icon (1)
+            // ICO Header
+            view.setUint16(0, 0, true);
+            view.setUint16(2, 1, true); // Type: Icon
             view.setUint16(4, numIcons, true);
             
-            let dataOffset = ICO_HEADER_SIZE + (ICON_DIR_ENTRY_SIZE * numIcons);
+            let offset = HEADER_SIZE + (numIcons * ENTRY_SIZE);
             
-            // 2. Write Directory Entries and Image Data
-            imageEntries.forEach((img, i) => {
-                const entryOffset = ICO_HEADER_SIZE + (i * ICON_DIR_ENTRY_SIZE);
+            layers.forEach((data, i) => {
+                const entryPos = HEADER_SIZE + (i * ENTRY_SIZE);
+                const size = data.size; // Custom property attached earlier
                 
-                // Set Directory Entry
-                view.setUint8(entryOffset, img.width === 256 ? 0 : img.width);
-                view.setUint8(entryOffset + 1, img.height === 256 ? 0 : img.height);
-                view.setUint8(entryOffset + 2, 0); // Color palette
-                view.setUint8(entryOffset + 3, 0); // Reserved
-                view.setUint16(entryOffset + 4, 1, true); // Color planes
-                view.setUint16(entryOffset + 6, 32, true); // Bits per pixel
-                view.setUint32(entryOffset + 8, img.data.byteLength, true); // Image size in bytes
-                view.setUint32(entryOffset + 12, dataOffset, true); // Offset of data
+                view.setUint8(entryPos, size); // Width
+                view.setUint8(entryPos + 1, size); // Height
+                view.setUint8(entryPos + 2, 0); // Palette
+                view.setUint8(entryPos + 3, 0); // Reserved
+                view.setUint16(entryPos + 4, 1, true); // Planes
+                view.setUint16(entryPos + 6, 32, true); // BPP
+                view.setUint32(entryPos + 8, data.byteLength, true); // Size
+                view.setUint32(entryPos + 12, offset, true); // Data Offset
                 
-                // Write Data
-                uint8.set(new Uint8Array(img.data), dataOffset);
-                
-                // Move data pointer forward
-                dataOffset += img.data.byteLength;
+                uint8.set(new Uint8Array(data), offset);
+                offset += data.byteLength;
             });
             
             return new Blob([buffer], { type: 'image/x-icon' });
         }
 
         generateBtn.addEventListener('click', async () => {
-            const btnOrig = generateBtn.innerText;
-            generateBtn.innerText = "Encoding Multi-Layer ICO...";
+            generateBtn.innerText = "Processing Package...";
             generateBtn.disabled = true;
 
             try {
                 const zip = new JSZip();
+                const imgFolder = zip.folder("assets/images");
                 
-                // Sizes for discrete PNG files
-                const pngSizes = [16, 32, 48, 180, 192, 512];
-                // Sizes specifically for the multi-layer ICO
-                const icoSizes = [16, 32, 48];
-                
-                const icoLayers = [];
+                const sizes = [16, 32, 48, 180, 192, 512];
+                const icoData = [];
 
-                for (const s of pngSizes) {
-                    const imgObj = await createPngData(s);
-                    const blob = new Blob([imgObj.data], { type: 'image/png' });
+                for (const s of sizes) {
+                    const buf = await createBuffer(s);
+                    let name = `icon-${s}.png`;
+                    
+                    if (s === 16) name = "favicon-16x16.png";
+                    if (s === 32) name = "favicon-32x32.png";
+                    if (s === 48) name = "favicon-48x48.png";
+                    if (s === 180) name = "apple-touch-icon.png";
+                    if (s === 192) name = "icon-192.png";
+                    if (s === 512) name = "icon-512.png";
+                    
+                    imgFolder.file(name, buf);
 
-                    if (s === 16) zip.file("favicon-16x16.png", blob);
-                    if (s === 32) zip.file("favicon-32x32.png", blob);
-                    if (s === 48) zip.file("favicon-48x48.png", blob);
-                    if (s === 180) zip.file("apple-touch-icon.png", blob);
-                    if (s === 192) zip.file("android-chrome-192x192.png", blob);
-                    if (s === 512) zip.file("android-chrome-512x512.png", blob);
-
-                    if (icoSizes.includes(s)) {
-                        icoLayers.push(imgObj);
+                    // Add 16, 32, and 48 to the ICO stack
+                    if ([16, 32, 48].includes(s)) {
+                        buf.size = s; // Tag for ICO builder
+                        icoData.push(buf);
                     }
                 }
 
-                // Generate the one .ico file containing ALL THREE sizes
-                const multiIco = assembleMultiLayerIco(icoLayers);
+                // Create the Multi-Layer ICO at root
+                const multiIco = buildIco(icoData);
                 zip.file("favicon.ico", multiIco);
 
-                // Manifest
+                // Create Manifest at root
                 const manifest = {
-                    name: appName.value || "Brand App",
-                    short_name: shortName.value || "Brand",
+                    name: appName.value || "My Site",
+                    short_name: appName.value.split(' ')[0] || "Site",
                     icons: [
-                        { src: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
-                        { src: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" }
+                        { src: "/assets/images/icon-192.png", sizes: "192x192", type: "image/png" },
+                        { src: "/assets/images/icon-512.png", sizes: "512x512", type: "image/png" }
                     ],
                     theme_color: themeColorHex.value,
                     background_color: "#ffffff",
@@ -289,28 +256,25 @@
                 zip.file("site.webmanifest", JSON.stringify(manifest, null, 2));
 
                 const content = await zip.generateAsync({type:"blob"});
-                saveAs(content, "favicon_pro_package.zip");
-
+                saveAs(content, "favicon_package.zip");
             } catch (err) {
                 console.error(err);
             } finally {
-                generateBtn.innerText = btnOrig;
+                generateBtn.innerText = "Generate Package";
                 generateBtn.disabled = false;
             }
         });
 
         copyBtn.addEventListener('click', () => {
-            const text = codeBlock.innerText;
             const textArea = document.createElement("textarea");
-            textArea.value = text;
+            textArea.value = codeBlock.innerText;
             document.body.appendChild(textArea);
             textArea.select();
             document.execCommand('copy');
             document.body.removeChild(textArea);
-            
-            const orig = copyBtn.innerText;
+            const oldText = copyBtn.innerText;
             copyBtn.innerText = "Copied!";
-            setTimeout(() => copyBtn.innerText = orig, 1500);
+            setTimeout(() => copyBtn.innerText = oldText, 2000);
         });
 
         updateHTML();
