@@ -4,346 +4,268 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ultimate Favicon Generator</title>
-    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- JSZip for creating the downloadable package -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <!-- FileSaver for saving the file -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         .dashed-border { background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='10' ry='10' stroke='%234B5563FF' stroke-width='2' stroke-dasharray='6%2c 14' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e"); }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-6">
+<body class="bg-gray-900 text-gray-100 min-h-screen p-4 md:p-8">
 
-    <div class="max-w-4xl mx-auto">
-        <header class="mb-10 text-center">
-            <h1 class="text-3xl font-bold text-blue-400 mb-2">Ultimate Favicon Generator</h1>
-            <p class="text-gray-400">Generates a Multi-Image .ico, Google-compliant PNGs, and a full Web Manifest.</p>
+    <div class="max-w-5xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-extrabold text-blue-400 mb-2">Favicon Pro Generator</h1>
+            <p class="text-gray-400">Produces True Multi-Layer ICOs & Google-Specific Search Icons</p>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
-            <!-- Left Column: Inputs -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="space-y-6">
-                
-                <!-- Step 1: Upload -->
-                <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
-                    <h2 class="text-xl font-semibold mb-4 text-white flex items-center">
-                        <span class="bg-blue-600 text-xs rounded px-2 py-1 mr-2">Step 1</span> Upload Logo
+                <!-- Step 1: Image Upload -->
+                <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2">1</span> 
+                        Source Image
                     </h2>
-                    <div id="dropZone" class="dashed-border rounded-xl h-48 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-700 transition relative">
-                        <input type="file" id="fileInput" accept="image/png, image/jpeg, image/svg+xml" class="absolute inset-0 opacity-0 cursor-pointer">
-                        <div class="text-center pointer-events-none">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                            </svg>
-                            <p class="text-sm text-gray-300">Click or Drag & Drop</p>
-                            <p class="text-xs text-gray-500 mt-1">Recommended: 512x512 PNG</p>
+                    <div id="dropZone" class="dashed-border rounded-xl h-40 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-700 transition relative">
+                        <input type="file" id="fileInput" accept="image/png, image/jpeg" class="absolute inset-0 opacity-0 cursor-pointer">
+                        <div id="uploadUI" class="text-center pointer-events-none">
+                            <p class="text-sm text-gray-300">Drop high-res PNG (512x512 recommended)</p>
                         </div>
                         <img id="previewImage" class="absolute inset-0 w-full h-full object-contain p-4 hidden" />
                     </div>
                 </div>
 
-                <!-- Step 2: Details -->
-                <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
-                    <h2 class="text-xl font-semibold mb-4 text-white flex items-center">
-                        <span class="bg-blue-600 text-xs rounded px-2 py-1 mr-2">Step 2</span> Manifest Details
+                <!-- Step 2: Site Info -->
+                <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2">2</span> 
+                        App Metadata
                     </h2>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-1">Full App Name</label>
-                            <input type="text" id="appName" placeholder="My Awesome Brand" class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="col-span-2 md:col-span-1">
+                            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Full Brand Name</label>
+                            <input type="text" id="appName" placeholder="My Company Ltd" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white">
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-1">Short Name (for Homescreen)</label>
-                            <input type="text" id="shortName" placeholder="Brand" class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                        <div class="col-span-2 md:col-span-1">
+                            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Homescreen Short Name</label>
+                            <input type="text" id="shortName" placeholder="MyCompany" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white">
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-400 mb-1">Theme Color</label>
-                                <div class="flex">
-                                    <input type="color" id="themeColorPicker" value="#ffffff" class="h-10 w-10 p-0 border-0 rounded-l cursor-pointer">
-                                    <input type="text" id="themeColorText" value="#ffffff" class="w-full bg-gray-900 border border-gray-600 border-l-0 rounded-r px-3 py-2 text-white uppercase text-sm">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-400 mb-1">Display Mode</label>
-                                <select id="displayMode" class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
-                                    <option value="standalone">Standalone (App-like)</option>
-                                    <option value="minimal-ui">Minimal UI</option>
-                                    <option value="browser">Browser</option>
-                                </select>
+                        <div class="col-span-2">
+                            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Theme Color</label>
+                            <div class="flex">
+                                <input type="color" id="themeColor" value="#2563eb" class="h-10 w-12 rounded-l-lg border-r-0 border-gray-600 bg-gray-900 cursor-pointer">
+                                <input type="text" id="themeColorHex" value="#2563eb" class="flex-grow bg-gray-900 border border-gray-600 rounded-r-lg px-3 py-2 text-white font-mono uppercase">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <button id="generateBtn" disabled class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg transition opacity-50 cursor-not-allowed">
-                    Download All Assets (.zip)
+                <button id="generateBtn" disabled class="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg transition duration-200 opacity-50 cursor-not-allowed uppercase tracking-wider">
+                    Generate & Download Package
                 </button>
             </div>
 
-            <!-- Right Column: Output Preview -->
             <div class="space-y-6">
-                
-                <!-- Generated Files List -->
-                <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
-                    <h2 class="text-xl font-semibold mb-4 text-white">Generating These Files:</h2>
-                    <ul class="space-y-2 text-sm text-gray-300">
-                        <li class="flex items-center"><span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span> <code>favicon.ico</code> (Bundles 16, 32, 48px)</li>
-                        <li class="flex items-center"><span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span> <code>site.webmanifest</code> (JSON config)</li>
-                        <li class="flex items-center"><span class="w-2 h-2 bg-blue-400 rounded-full mr-2"></span> <code>assets/images/favicon-48x48.png</code> (Google)</li>
-                        <li class="flex items-center"><span class="w-2 h-2 bg-blue-400 rounded-full mr-2"></span> <code>assets/images/favicon-32x32.png</code> (Tabs)</li>
-                         <li class="flex items-center"><span class="w-2 h-2 bg-blue-400 rounded-full mr-2"></span> <code>assets/images/favicon-16x16.png</code> (Tiny)</li>
-                        <li class="flex items-center"><span class="w-2 h-2 bg-blue-400 rounded-full mr-2"></span> <code>assets/images/apple-touch-icon.png</code> (iOS)</li>
-                        <li class="flex items-center"><span class="w-2 h-2 bg-blue-400 rounded-full mr-2"></span> <code>assets/images/icon-192.png</code> (Android)</li>
-                        <li class="flex items-center"><span class="w-2 h-2 bg-blue-400 rounded-full mr-2"></span> <code>assets/images/icon-512.png</code> (Splash)</li>
-                    </ul>
-                </div>
-
-                <!-- HTML Code Block -->
-                <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 flex flex-col h-full">
-                    <h2 class="text-xl font-semibold mb-4 text-white">Your HTML Code</h2>
-                    <div class="relative flex-grow">
-                        <textarea id="codeOutput" readonly class="w-full h-64 bg-gray-900 border border-gray-600 rounded p-4 text-xs font-mono text-green-400 focus:outline-none resize-none">
-<!-- Upload an image to generate your code -->
-                        </textarea>
-                        <button onclick="copyCode()" class="absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-white text-xs px-2 py-1 rounded">
-                            Copy
-                        </button>
+                <!-- Package Summary -->
+                <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
+                    <h2 class="text-xl font-bold mb-4 text-white">Files to be Generated</h2>
+                    <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                        <div class="p-2 bg-gray-900 rounded border border-gray-700 text-blue-300">favicon.ico (16,32,48px)</div>
+                        <div class="p-2 bg-gray-900 rounded border border-gray-700 text-green-300">site.webmanifest</div>
+                        <div class="p-2 bg-gray-900 rounded border border-gray-700">favicon-16x16.png</div>
+                        <div class="p-2 bg-gray-900 rounded border border-gray-700">favicon-32x32.png</div>
+                        <div class="p-2 bg-gray-900 rounded border border-gray-700 text-yellow-300">favicon-48x48.png (Google)</div>
+                        <div class="p-2 bg-gray-900 rounded border border-gray-700">apple-touch-icon.png</div>
+                        <div class="p-2 bg-gray-900 rounded border border-gray-700">icon-192.png</div>
+                        <div class="p-2 bg-gray-900 rounded border border-gray-700">icon-512.png</div>
                     </div>
                 </div>
 
+                <!-- Live HTML Preview -->
+                <div class="bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-700">
+                    <h2 class="text-xl font-bold mb-4 text-white">Ready-to-Use HTML</h2>
+                    <div class="relative">
+                        <pre id="codeBlock" class="bg-gray-900 p-4 rounded-xl text-[10px] md:text-xs text-green-400 overflow-x-auto h-48 border border-gray-700"></pre>
+                        <button onclick="copyCode()" class="absolute top-2 right-2 px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-[10px] rounded-lg">Copy</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-
-    <!-- Hidden Canvas for Processing -->
-    <canvas id="canvas" style="display: none;"></canvas>
 
     <script>
         const fileInput = document.getElementById('fileInput');
         const previewImage = document.getElementById('previewImage');
         const generateBtn = document.getElementById('generateBtn');
-        const themeColorPicker = document.getElementById('themeColorPicker');
-        const themeColorText = document.getElementById('themeColorText');
-        const appNameInput = document.getElementById('appName');
-        const shortNameInput = document.getElementById('shortName');
-        const codeOutput = document.getElementById('codeOutput');
-        
-        let uploadedImage = null;
+        const codeBlock = document.getElementById('codeBlock');
+        const themeColor = document.getElementById('themeColor');
+        const themeColorHex = document.getElementById('themeColorHex');
+        const appName = document.getElementById('appName');
+        const shortName = document.getElementById('shortName');
 
-        // Sync Color Inputs
-        themeColorPicker.addEventListener('input', (e) => themeColorText.value = e.target.value);
-        themeColorText.addEventListener('input', (e) => themeColorPicker.value = e.target.value);
+        let sourceImg = null;
 
-        // Auto-fill Short Name from App Name if empty
-        appNameInput.addEventListener('input', (e) => {
-            if(!shortNameInput.value) {
-                shortNameInput.value = e.target.value.substring(0, 12);
-            }
-        });
+        // Sync colors
+        themeColor.addEventListener('input', (e) => { themeColorHex.value = e.target.value; updateHTML(); });
+        themeColorHex.addEventListener('input', (e) => { themeColor.value = e.target.value; updateHTML(); });
 
-        // Handle File Upload
-        fileInput.addEventListener('change', function(e) {
+        fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
-            reader.onload = function(event) {
-                uploadedImage = new Image();
-                uploadedImage.onload = function() {
-                    previewImage.src = event.target.result;
+            reader.onload = (ev) => {
+                sourceImg = new Image();
+                sourceImg.onload = () => {
+                    previewImage.src = ev.target.result;
                     previewImage.classList.remove('hidden');
+                    document.getElementById('uploadUI').classList.add('hidden');
                     generateBtn.disabled = false;
                     generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    updateHTMLPreview();
+                    updateHTML();
                 };
-                uploadedImage.src = event.target.result;
+                sourceImg.src = ev.target.result;
             };
             reader.readAsDataURL(file);
         });
 
-        // Update HTML Preview dynamically
-        function updateHTMLPreview() {
-            const html = `<!-- 1. The Root Fallback (Multi-size ICO) -->
+        function updateHTML() {
+            const color = themeColorHex.value;
+            codeBlock.innerText = `<!-- Root Fallback -->
 <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
 
-<!-- 2. The Browser & Google Specifics -->
-<link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png">
+<!-- Standard PNGs -->
 <link rel="icon" type="image/png" sizes="16x16" href="./assets/images/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="48x48" href="./assets/images/favicon-48x48.png">
 
-<!-- 3. Apple Touch -->
+<!-- Apple/Safari -->
 <link rel="apple-touch-icon" href="./assets/images/apple-touch-icon.png">
 
-<!-- 4. The Manifest -->
+<!-- Manifest / Android -->
 <link rel="manifest" href="./site.webmanifest">
-<meta name="theme-color" content="${themeColorText.value}">`;
-            codeOutput.value = html;
+<meta name="theme-color" content="${color}">`;
         }
-        
-        // Listen for input changes to update HTML
-        themeColorText.addEventListener('input', updateHTMLPreview);
 
-        // Resize Helper
-        function resizeImage(img, size) {
+        async function createBlob(size) {
             const canvas = document.createElement('canvas');
             canvas.width = size;
             canvas.height = size;
             const ctx = canvas.getContext('2d');
-            
-            // High quality scaling
             ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = "high";
-            ctx.drawImage(img, 0, 0, size, size);
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(sourceImg, 0, 0, size, size);
+            return new Promise(res => canvas.toBlob(res, 'image/png'));
+        }
+
+        // Logic for TRUE Binary ICO generation
+        function createIcoFile(pngBuffers) {
+            const HEADER_SIZE = 6;
+            const ENTRY_SIZE = 16;
+            const numImages = pngBuffers.length;
+            let totalDataSize = 0;
             
-            return new Promise(resolve => {
-                canvas.toBlob(blob => resolve(blob), 'image/png');
+            pngBuffers.forEach(b => totalDataSize += b.byteLength);
+            
+            const buffer = new ArrayBuffer(HEADER_SIZE + (ENTRY_SIZE * numImages) + totalDataSize);
+            const view = new DataView(buffer);
+            const uint8 = new Uint8Array(buffer);
+            
+            // ICO Header
+            view.setUint16(0, 0, true);  // Reserved
+            view.setUint16(2, 1, true);  // Type 1 (ICO)
+            view.setUint16(4, numImages, true);
+            
+            let offset = HEADER_SIZE + (ENTRY_SIZE * numImages);
+            let entryPos = HEADER_SIZE;
+            
+            pngBuffers.forEach(png => {
+                const imgSize = Math.sqrt(png.byteLength); // Approximation for metadata
+                // Since these are PNGs inside ICO, width/height are 0 for 256px, otherwise actual
+                const width = png.width || 0; 
+                
+                view.setUint8(entryPos, png.width);
+                view.setUint8(entryPos + 1, png.height);
+                view.setUint8(entryPos + 2, 0); // Palette
+                view.setUint8(entryPos + 3, 0); // Reserved
+                view.setUint16(entryPos + 4, 1, true); // Planes
+                view.setUint16(entryPos + 6, 32, true); // BPP
+                view.setUint32(entryPos + 8, png.byteLength, true); // Size
+                view.setUint32(entryPos + 12, offset, true); // Offset
+                
+                uint8.set(new Uint8Array(png), offset);
+                
+                offset += png.byteLength;
+                entryPos += ENTRY_SIZE;
             });
-        }
-
-        // Helper: Convert Blob to ArrayBuffer
-        async function blobToArrayBuffer(blob) {
-            return await blob.arrayBuffer();
-        }
-
-        // --- ICO GENERATOR LOGIC ---
-        // Creates a valid binary ICO file containing multiple PNG images
-        function generateICO(images) {
-            const headerSize = 6;
-            const dirEntrySize = 16;
-            const numImages = images.length;
-            
-            // Calculate total size and offsets
-            let totalSize = headerSize + (dirEntrySize * numImages);
-            let currentOffset = totalSize;
-            
-            const entries = [];
-            
-            for (const img of images) {
-                const size = img.data.byteLength;
-                entries.push({
-                    width: img.width === 256 ? 0 : img.width,
-                    height: img.height === 256 ? 0 : img.height,
-                    size: size,
-                    offset: currentOffset
-                });
-                totalSize += size;
-                currentOffset += size;
-            }
-            
-            const buffer = new Uint8Array(totalSize);
-            const view = new DataView(buffer.buffer);
-            
-            // 1. Write Header
-            view.setUint16(0, 0, true); // Reserved
-            view.setUint16(2, 1, true); // Type 1 = ICO
-            view.setUint16(4, numImages, true); // Count
-            
-            // 2. Write Directory Entries
-            let dirOffset = 6;
-            for (let i = 0; i < numImages; i++) {
-                const img = images[i];
-                const entry = entries[i];
-                
-                view.setUint8(dirOffset, entry.width);        // Width
-                view.setUint8(dirOffset + 1, entry.height);   // Height
-                view.setUint8(dirOffset + 2, 0);              // Colors (0 for >= 256)
-                view.setUint8(dirOffset + 3, 0);              // Reserved
-                view.setUint16(dirOffset + 4, 1, true);       // Planes
-                view.setUint16(dirOffset + 6, 32, true);      // BPP
-                view.setUint32(dirOffset + 8, entry.size, true);   // Size
-                view.setUint32(dirOffset + 12, entry.offset, true); // Offset
-                
-                dirOffset += 16;
-            }
-            
-            // 3. Write Image Data
-            for (let i = 0; i < numImages; i++) {
-                const entry = entries[i];
-                const imgData = new Uint8Array(images[i].data);
-                buffer.set(imgData, entry.offset);
-            }
             
             return new Blob([buffer], { type: 'image/x-icon' });
         }
 
-        // Generate Assets
-        generateBtn.addEventListener('click', async function() {
-            if (!uploadedImage) return;
-            
-            const zip = new JSZip();
-            const assets = zip.folder("assets").folder("images");
-            
+        generateBtn.addEventListener('click', async () => {
             generateBtn.innerText = "Processing...";
+            const zip = new JSZip();
+            const imgFolder = zip.folder("assets").folder("images");
+            
+            const sizes = [16, 32, 48, 180, 192, 512];
+            const pngDataForIco = [];
 
-            // 1. Generate PNGs (Blobs)
-            const sizesConfig = [
-                { name: 'favicon-16x16.png', size: 16, forIco: true },
-                { name: 'favicon-32x32.png', size: 32, forIco: true },
-                { name: 'favicon-48x48.png', size: 48, forIco: true }, 
-                { name: 'apple-touch-icon.png', size: 180, forIco: false },
-                { name: 'icon-192.png', size: 192, forIco: false },
-                { name: 'icon-512.png', size: 512, forIco: false }
-            ];
-
-            const icoImages = [];
-
-            // Loop through configs and generate files
-            for (const s of sizesConfig) {
-                const blob = await resizeImage(uploadedImage, s.size);
+            for (const s of sizes) {
+                const blob = await createBlob(s);
+                const arrayBuffer = await blob.arrayBuffer();
                 
-                // Add to ZIP
-                assets.file(s.name, blob);
+                let filename = `favicon-${s}x16.png`; // Fallback name
+                if (s === 16) filename = "favicon-16x16.png";
+                if (s === 32) filename = "favicon-32x32.png";
+                if (s === 48) filename = "favicon-48x48.png";
+                if (s === 180) filename = "apple-touch-icon.png";
+                if (s === 192) filename = "icon-192.png";
+                if (s === 512) filename = "icon-512.png";
+                
+                imgFolder.file(filename, blob);
 
-                // Collect for ICO compilation if flagged
-                if (s.forIco) {
-                    const buffer = await blobToArrayBuffer(blob);
-                    icoImages.push({
-                        width: s.size,
-                        height: s.size,
-                        data: buffer
-                    });
+                // Add 16, 32, 48 to the ICO buffer
+                if ([16, 32, 48].includes(s)) {
+                    arrayBuffer.width = s;
+                    arrayBuffer.height = s;
+                    pngDataForIco.push(arrayBuffer);
                 }
             }
 
-            // 2. Generate True Multi-Image ICO
-            const icoBlob = generateICO(icoImages);
-            zip.file("favicon.ico", icoBlob);
+            // Create ICO
+            const finalIco = createIcoFile(pngDataForIco);
+            zip.file("favicon.ico", finalIco);
 
-            // 3. Generate Manifest
+            // Create Manifest
             const manifest = {
-                name: appNameInput.value || "My App",
-                short_name: shortNameInput.value || (appNameInput.value || "App").substring(0, 12),
+                name: appName.value || "My Site",
+                short_name: shortName.value || "Site",
                 icons: [
                     { src: "./assets/images/icon-192.png", sizes: "192x192", type: "image/png" },
                     { src: "./assets/images/icon-512.png", sizes: "512x512", type: "image/png" }
                 ],
-                theme_color: themeColorText.value,
-                background_color: themeColorText.value,
-                display: document.getElementById('displayMode').value,
+                theme_color: themeColorHex.value,
+                background_color: "#ffffff",
+                display: "standalone",
                 start_url: "./index.html"
             };
-
             zip.file("site.webmanifest", JSON.stringify(manifest, null, 2));
 
-            // 4. Download
-            zip.generateAsync({type:"blob"}).then(function(content) {
-                saveAs(content, "favicon-package.zip");
-                generateBtn.innerText = "Download Again";
-            });
+            const content = await zip.generateAsync({type:"blob"});
+            saveAs(content, "favicon_package.zip");
+            generateBtn.innerText = "Download Package";
         });
 
         function copyCode() {
-            codeOutput.select();
-            document.execCommand('copy');
-            alert("Code copied to clipboard!");
+            const range = document.createRange();
+            range.selectNode(codeBlock);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand("copy");
+            alert("Code copied!");
         }
     </script>
 </body>
 </html>
-
 
