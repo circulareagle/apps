@@ -22,7 +22,9 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
         /* Prevent canvas interactions from triggering default browser behaviors */
-        img { user-drag: none; -webkit-user-drag: none; }
+        img { user-drag: none; -webkit-user-drag: none; user-select: none; }
+        /* Add user-select none to prevent text selection on canvas */
+        .canvas-container * { user-select: none; }
     </style>
 </head>
 <body>
@@ -31,7 +33,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // --- ICON SYSTEM (Replaces lucide-react imports) ---
+        // --- ICON SYSTEM (Added more icons for new elements) ---
         const Icon = ({ name, size = 18, className = '' }) => {
             const props = { width: size, height: size, className, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" };
             switch(name) {
@@ -52,11 +54,18 @@
                 case 'AlignLeft': return <svg {...props}><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>;
                 case 'MousePointer2': return <svg {...props}><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></svg>;
                 case 'ImageIcon': return <svg {...props}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>;
+                case 'Link': return <svg {...props}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>; // Added for link
+                case 'List': return <svg {...props}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>; // Added for lists
+                case 'Form': return <svg {...props}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M7 7h10"/><path d="M7 12h10"/><path d="M7 17h10"/></svg>; // Added for forms
+                case 'Undo': return <svg {...props}><path d="M3 12v.3A3.5 3.5 0 0 0 6.5 16h9.5a3.5 3.5 0 0 0 3.5-3.5V12"/><path d="M3 9l4-4 4 4"/></svg>; // Added for undo
+                case 'Redo': return <svg {...props}><path d="M21 12v.3a3.5 3.5 0 0 1-3.5 3.5H8a3.5 3.5 0 0 1-3.5-3.5V12"/><path d="M21 9l-4-4-4 4"/></svg>; // Added for redo
+                case 'ArrowUp': return <svg {...props}><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>; // For move up
+                case 'ArrowDown': return <svg {...props}><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>; // For move down
                 default: return <svg {...props}></svg>;
             }
         };
 
-        // --- INITIAL STATE ---
+        // --- INITIAL STATE (Updated defaultTree with attrs, more realistic structure) ---
         const generateId = () => 'el_' + Math.random().toString(36).substr(2, 9);
 
         const defaultTree = {
@@ -65,6 +74,7 @@
             name: 'Body',
             content: '',
             styles: { minHeight: '100vh', backgroundColor: '#ffffff', fontFamily: 'sans-serif', margin: '0' },
+            attrs: {}, // New: for attributes like src, href
             children: [
                 {
                     id: generateId(),
@@ -72,6 +82,7 @@
                     name: 'Hero Section',
                     content: '',
                     styles: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', minHeight: '60vh' },
+                    attrs: {},
                     children: [
                         {
                             id: generateId(),
@@ -79,7 +90,8 @@
                             name: 'Badge',
                             content: 'NEW FEATURE',
                             styles: { backgroundColor: '#dbeafe', color: '#1d4ed8', padding: '4px 12px', borderRadius: '9999px', fontSize: '12px', fontWeight: 'bold', marginBottom: '24px', letterSpacing: '1px' },
-                            children: []
+                            attrs: {},
+                            children: [] // Even for leaves, use [] for consistency; check length for content edit
                         },
                         {
                             id: generateId(),
@@ -87,6 +99,7 @@
                             name: 'Heading',
                             content: 'Build the web, visually.',
                             styles: { fontSize: '48px', fontWeight: '800', color: '#0f172a', marginBottom: '16px', textAlign: 'center', lineHeight: '1.2', maxWidth: '800px' },
+                            attrs: {},
                             children: []
                         },
                         {
@@ -95,6 +108,7 @@
                             name: 'Subtitle',
                             content: 'A professional-grade visual editor that outputs clean, production-ready HTML and CSS. Built entirely in a single file.',
                             styles: { fontSize: '18px', color: '#64748b', marginBottom: '40px', textAlign: 'center', maxWidth: '600px', lineHeight: '1.6' },
+                            attrs: {},
                             children: []
                         },
                         {
@@ -103,6 +117,7 @@
                             name: 'Button Group',
                             content: '',
                             styles: { display: 'flex', gap: '16px' },
+                            attrs: {},
                             children: [
                                 {
                                     id: generateId(),
@@ -110,6 +125,7 @@
                                     name: 'Primary Button',
                                     content: 'Start Building',
                                     styles: { backgroundColor: '#3b82f6', color: '#ffffff', padding: '12px 24px', borderRadius: '8px', border: 'none', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
+                                    attrs: {},
                                     children: []
                                 },
                                 {
@@ -118,6 +134,7 @@
                                     name: 'Secondary Button',
                                     content: 'View Source',
                                     styles: { backgroundColor: '#ffffff', color: '#0f172a', padding: '12px 24px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
+                                    attrs: {},
                                     children: []
                                 }
                             ]
@@ -130,10 +147,39 @@
         // --- MAIN APPLICATION COMPONENT ---
         function App() {
             const [tree, setTree] = useState(defaultTree);
+            const [history, setHistory] = useState([defaultTree]); // New: for undo/redo
+            const [historyIndex, setHistoryIndex] = useState(0);
             const [selectedId, setSelectedId] = useState('root');
             const [hoveredId, setHoveredId] = useState(null);
             const [viewMode, setViewMode] = useState('desktop'); 
             const [activeTab, setActiveTab] = useState('add'); 
+            const [elementSearch, setElementSearch] = useState(''); // New: search in add tab
+
+            // --- HELPER: Update Tree with History ---
+            const updateTree = (updater) => {
+                setTree(prev => {
+                    const newTree = typeof updater === 'function' ? updater(prev) : updater;
+                    const newHistory = history.slice(0, historyIndex + 1).concat([JSON.parse(JSON.stringify(newTree))]); // Deep copy
+                    setHistory(newHistory);
+                    setHistoryIndex(newHistory.length - 1);
+                    return newTree;
+                });
+            };
+
+            // --- Undo/Redo ---
+            const handleUndo = () => {
+                if (historyIndex > 0) {
+                    setTree(history[historyIndex - 1]);
+                    setHistoryIndex(historyIndex - 1);
+                }
+            };
+
+            const handleRedo = () => {
+                if (historyIndex < history.length - 1) {
+                    setTree(history[historyIndex + 1]);
+                    setHistoryIndex(historyIndex + 1);
+                }
+            };
 
             // --- HELPER: Find Node ---
             const findNode = (nodes, id) => {
@@ -141,6 +187,18 @@
                 if (nodes.children) {
                     for (let child of nodes.children) {
                         const found = findNode(child, id);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            };
+
+            // --- HELPER: Find Parent ---
+            const findParent = (nodes, id, parent = null) => {
+                if (nodes.id === id) return parent;
+                if (nodes.children) {
+                    for (let child of nodes.children) {
+                        const found = findParent(child, id, nodes);
                         if (found) return found;
                     }
                 }
@@ -161,16 +219,29 @@
             };
 
             const handleUpdateStyle = (key, value) => {
-                setTree(prev => updateNode(prev, selectedId, {
-                    styles: { ...findNode(prev, selectedId).styles, [key]: value }
+                // Sanitize value (e.g., add 'px' if numeric and not %/rem)
+                let sanitized = value;
+                if (/^\d+$/.test(value) && !['opacity', 'lineHeight'].includes(key)) sanitized += 'px';
+                updateTree(prev => updateNode(prev, selectedId, {
+                    styles: { ...findNode(prev, selectedId).styles, [key]: sanitized }
                 }));
             };
 
             const handleUpdateContent = (value) => {
-                setTree(prev => updateNode(prev, selectedId, { content: value }));
+                updateTree(prev => updateNode(prev, selectedId, { content: value }));
             };
 
-            // --- HELPER: Add Node ---
+            const handleUpdateName = (value) => {
+                updateTree(prev => updateNode(prev, selectedId, { name: value }));
+            };
+
+            const handleUpdateAttr = (key, value) => {
+                updateTree(prev => updateNode(prev, selectedId, {
+                    attrs: { ...findNode(prev, selectedId).attrs, [key]: value }
+                }));
+            };
+
+            // --- HELPER: Add Node (Fixed: add to parent if selected is leaf) ---
             const handleAddElement = (type) => {
                 const newNode = {
                     id: generateId(),
@@ -178,14 +249,20 @@
                     name: type.name,
                     content: type.content || '',
                     styles: { ...type.defaultStyles },
-                    children: type.canHaveChildren ? [] : undefined
+                    attrs: { ...type.defaultAttrs },
+                    children: type.canHaveChildren ? [] : []
                 };
 
-                setTree(prev => {
-                    const targetId = findNode(prev, selectedId)?.children ? selectedId : 'root';
+                updateTree(prev => {
+                    let targetId = selectedId;
+                    const selected = findNode(prev, selectedId);
+                    if (!selected.children || selected.children.length === 0) {
+                        const parent = findParent(prev, selectedId);
+                        if (parent) targetId = parent.id; // Fix: add to parent if leaf
+                    }
                     const insertInto = (node) => {
                         if (node.id === targetId) {
-                            return { ...node, children: [...(node.children || []), newNode] };
+                            return { ...node, children: [...node.children, newNode] };
                         }
                         if (node.children) {
                             return { ...node, children: node.children.map(insertInto) };
@@ -201,7 +278,7 @@
             // --- HELPER: Delete Node ---
             const handleDelete = () => {
                 if (selectedId === 'root') return;
-                setTree(prev => {
+                updateTree(prev => {
                     const removeNode = (node) => {
                         if (!node.children) return node;
                         return {
@@ -214,13 +291,26 @@
                 setSelectedId('root');
             };
 
-            // --- COMPILER: React Tree to HTML/CSS ---
+            // --- HELPER: Move Node Up/Down ---
+            const handleMove = (direction) => {
+                if (selectedId === 'root') return;
+                const parent = findParent(tree, selectedId);
+                if (!parent) return;
+                const index = parent.children.findIndex(c => c.id === selectedId);
+                if ((direction === 'up' && index <= 0) || (direction === 'down' && index >= parent.children.length - 1)) return;
+                const newChildren = [...parent.children];
+                const swapIndex = direction === 'up' ? index - 1 : index + 1;
+                [newChildren[index], newChildren[swapIndex]] = [newChildren[swapIndex], newChildren[index]];
+                updateTree(prev => updateNode(prev, parent.id, { children: newChildren }));
+            };
+
+            // --- COMPILER: React Tree to HTML/CSS (Improved: attrs, combined CSS, basic media, no specials) ---
             const generateExportCode = () => {
                 let cssLines = [];
-                
+                let classMap = {}; // To combine shared styles (basic dedupe)
+
                 const compileNodeHTML = (node) => {
                     const className = `el-${node.id}`;
-                    
                     let styleRules = [];
                     for (const [key, value] of Object.entries(node.styles)) {
                         if (value) {
@@ -229,20 +319,24 @@
                         }
                     }
                     if (styleRules.length > 0) {
-                        cssLines.push(`.${className} { ${styleRules.join(' ')} }`);
+                        const ruleStr = styleRules.join(' ');
+                        if (!classMap[ruleStr]) classMap[ruleStr] = [];
+                        classMap[ruleStr].push(className);
                     }
 
-                    const isSelfClosing = ['img', 'input', 'br', 'hr'].includes(node.tag);
-                    let html = `<${node.tag} class="${className}"`;
+                    const isSelfClosing = ['img', 'input', 'br', 'hr', 'textarea'].includes(node.tag);
+                    let html = `<\( {node.tag} class=" \){className}"`;
                     
-                    if (node.tag === 'img' && node.content) html += ` src="${node.content}"`;
-                    if (node.tag === 'a' && node.content) html += ` href="#"`;
-                    
+                    for (const [attrKey, attrValue] of Object.entries(node.attrs || {})) {
+                        html += ` \( {attrKey}=" \){attrValue}"`;
+                    }
+
                     if (isSelfClosing) {
                         html += ' />';
+                        return html;
                     } else {
                         html += '>';
-                        if (node.tag !== 'img' && node.content) html += node.content;
+                        if (node.content) html += node.content;
                         if (node.children) {
                             html += '\n' + node.children.map(c => compileNodeHTML(c)).join('\n') + '\n';
                         }
@@ -252,7 +346,12 @@
                 };
 
                 const bodyHtml = compileNodeHTML(tree);
-                
+
+                // Combine CSS for dedupe
+                for (const [ruleStr, classes] of Object.entries(classMap)) {
+                    cssLines.push(`.${classes.join(', .')} { ${ruleStr} }`);
+                }
+
                 return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -266,6 +365,12 @@
         
         /* Generated Styles */
 ${cssLines.map(l => `        ${l}`).join('\n')}
+
+        /* Basic Responsive Stub (expand with media queries per viewMode) */
+        @media (max-width: 768px) {
+            /* Example: stack flex on mobile */
+            .el-root { flex-direction: column; }
+        }
     </style>
 </head>
 <body>
@@ -285,17 +390,26 @@ ${bodyHtml}
                 URL.revokeObjectURL(url);
             };
 
-            // --- UI COMPONENTS ---
-
+            // --- UI COMPONENTS (Expanded library with more elements) ---
             const ElementsLibrary = [
-                { name: 'Section', tag: 'section', icon: 'Square', canHaveChildren: true, defaultStyles: { padding: '40px 20px', backgroundColor: '#ffffff', minHeight: '50px' } },
-                { name: 'Div Block', tag: 'div', icon: 'BoxSelect', canHaveChildren: true, defaultStyles: { padding: '20px', minHeight: '50px' } },
-                { name: 'Grid Row', tag: 'div', icon: 'Layout', canHaveChildren: true, defaultStyles: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', width: '100%' } },
-                { name: 'Heading 1', tag: 'h1', icon: 'Type', content: 'Heading', canHaveChildren: false, defaultStyles: { fontSize: '32px', fontWeight: 'bold', margin: '0 0 16px 0', color: '#111827' } },
-                { name: 'Paragraph', tag: 'p', icon: 'AlignLeft', content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', canHaveChildren: false, defaultStyles: { fontSize: '16px', color: '#4b5563', margin: '0 0 16px 0', lineHeight: '1.5' } },
-                { name: 'Button', tag: 'button', icon: 'MousePointer2', content: 'Click Me', canHaveChildren: false, defaultStyles: { padding: '10px 20px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'inline-block' } },
-                { name: 'Image', tag: 'img', icon: 'ImageIcon', content: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop', canHaveChildren: false, defaultStyles: { maxWidth: '100%', height: 'auto', display: 'block' } },
+                { name: 'Section', tag: 'section', icon: 'Square', canHaveChildren: true, defaultStyles: { padding: '40px 20px', backgroundColor: '#ffffff', minHeight: '50px' }, defaultAttrs: {} },
+                { name: 'Div Block', tag: 'div', icon: 'BoxSelect', canHaveChildren: true, defaultStyles: { padding: '20px', minHeight: '50px' }, defaultAttrs: {} },
+                { name: 'Grid Row', tag: 'div', icon: 'Layout', canHaveChildren: true, defaultStyles: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', width: '100%' }, defaultAttrs: {} },
+                { name: 'Heading 1', tag: 'h1', icon: 'Type', content: 'Heading', canHaveChildren: false, defaultStyles: { fontSize: '32px', fontWeight: 'bold', margin: '0 0 16px 0', color: '#111827' }, defaultAttrs: {} },
+                { name: 'Paragraph', tag: 'p', icon: 'AlignLeft', content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', canHaveChildren: false, defaultStyles: { fontSize: '16px', color: '#4b5563', margin: '0 0 16px 0', lineHeight: '1.5' }, defaultAttrs: {} },
+                { name: 'Button', tag: 'button', icon: 'MousePointer2', content: 'Click Me', canHaveChildren: false, defaultStyles: { padding: '10px 20px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'inline-block' }, defaultAttrs: {} },
+                { name: 'Image', tag: 'img', icon: 'ImageIcon', canHaveChildren: false, defaultStyles: { maxWidth: '100%', height: 'auto', display: 'block' }, defaultAttrs: { src: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop', alt: 'Image' } },
+                // New Elements
+                { name: 'Link', tag: 'a', icon: 'Link', content: 'Click Here', canHaveChildren: false, defaultStyles: { color: '#3b82f6', textDecoration: 'underline' }, defaultAttrs: { href: '#' } },
+                { name: 'Unordered List', tag: 'ul', icon: 'List', canHaveChildren: true, defaultStyles: { listStyleType: 'disc', paddingLeft: '20px' }, defaultAttrs: {} },
+                { name: 'List Item', tag: 'li', icon: 'List', content: 'List Item', canHaveChildren: false, defaultStyles: { marginBottom: '8px' }, defaultAttrs: {} },
+                { name: 'Form', tag: 'form', icon: 'Form', canHaveChildren: true, defaultStyles: { display: 'flex', flexDirection: 'column', gap: '16px' }, defaultAttrs: { action: '', method: 'post' } },
+                { name: 'Input', tag: 'input', icon: 'Form', canHaveChildren: false, defaultStyles: { padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }, defaultAttrs: { type: 'text', placeholder: 'Enter text' } },
+                { name: 'Textarea', tag: 'textarea', icon: 'Form', content: 'Enter message', canHaveChildren: false, defaultStyles: { padding: '8px', border: '1px solid #ccc', borderRadius: '4px', minHeight: '100px' }, defaultAttrs: { placeholder: 'Enter message' } },
             ];
+
+            // Filter library by search
+            const filteredElements = ElementsLibrary.filter(el => el.name.toLowerCase().includes(elementSearch.toLowerCase()));
 
             const CanvasNode = ({ node }) => {
                 const isSelected = selectedId === node.id;
@@ -327,21 +441,17 @@ ${bodyHtml}
                     nodeStyle.outlineOffset = '-1px';
                 }
 
-                if (node.children && node.children.length === 0 && node.tag !== 'img') {
+                if (node.children.length === 0 && node.tag !== 'img' && node.tag !== 'input' && node.tag !== 'textarea') {
                     nodeStyle.minHeight = nodeStyle.minHeight || '40px';
                     if(!nodeStyle.backgroundColor && !nodeStyle.backgroundImage && node.id !== 'root') {
                         nodeStyle.backgroundColor = 'rgba(243, 244, 246, 0.5)';
                     }
                 }
 
-                if (node.tag === 'img') {
-                    return <img src={node.content} style={nodeStyle} onClick={handleClick} onMouseOver={handleMouseOver} onMouseOut={handleMouseOut} alt="Builder Element" />;
-                }
-
                 return (
-                    <Tag style={nodeStyle} onClick={handleClick} onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>
+                    <Tag style={nodeStyle} {...node.attrs} onClick={handleClick} onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>
                         {node.content}
-                        {node.children && node.children.map(child => <CanvasNode key={child.id} node={child} />)}
+                        {node.children.map(child => <CanvasNode key={child.id} node={child} />)}
                     </Tag>
                 );
             };
@@ -349,7 +459,10 @@ ${bodyHtml}
             const LayerItem = ({ node, level = 0 }) => {
                 const isSelected = selectedId === node.id;
                 const [isOpen, setIsOpen] = useState(true);
-                const hasChildren = node.children && node.children.length > 0;
+                const hasChildren = node.children.length > 0;
+
+                // Stub for drag in layers (expand with onDragStart, onDragOver, onDrop for full reordering)
+                // e.g., onDragStart={(e) => e.dataTransfer.setData('text/plain', node.id)}
 
                 return (
                     <div className="w-full">
@@ -358,6 +471,7 @@ ${bodyHtml}
                                 ${isSelected ? 'bg-blue-500 text-white' : 'text-gray-300 hover:bg-gray-800'}`}
                             style={{ paddingLeft: `${(level * 12) + 8}px` }}
                             onClick={() => setSelectedId(node.id)}
+                            draggable // Stub: enable drag for future reordering
                         >
                             <div className="w-4 h-4 mr-1 flex items-center justify-center" onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}>
                                 {hasChildren && (isOpen ? <Icon name="ChevronDown" size={14}/> : <Icon name="ChevronRight" size={14}/>)}
@@ -411,10 +525,10 @@ ${bodyHtml}
                 <div>
                     <label className="text-xs text-gray-400 block mb-2">{label} (px/rem/%)</label>
                     <div className="grid grid-cols-2 gap-2">
-                        <input placeholder="Top" value={styles[`${stylePrefix}Top`] || ''} onChange={(e) => handleUpdateStyle(`${stylePrefix}Top`, e.target.value)} className="bg-gray-900 text-xs p-1.5 border border-gray-700 rounded" />
-                        <input placeholder="Right" value={styles[`${stylePrefix}Right`] || ''} onChange={(e) => handleUpdateStyle(`${stylePrefix}Right`, e.target.value)} className="bg-gray-900 text-xs p-1.5 border border-gray-700 rounded" />
-                        <input placeholder="Bottom" value={styles[`${stylePrefix}Bottom`] || ''} onChange={(e) => handleUpdateStyle(`${stylePrefix}Bottom`, e.target.value)} className="bg-gray-900 text-xs p-1.5 border border-gray-700 rounded" />
-                        <input placeholder="Left" value={styles[`${stylePrefix}Left`] || ''} onChange={(e) => handleUpdateStyle(`${stylePrefix}Left`, e.target.value)} className="bg-gray-900 text-xs p-1.5 border border-gray-700 rounded" />
+                        <input placeholder="Top" value={styles[`\( {stylePrefix}Top`] || ''} onChange={(e) => handleUpdateStyle(` \){stylePrefix}Top`, e.target.value)} className="bg-gray-900 text-xs p-1.5 border border-gray-700 rounded" />
+                        <input placeholder="Right" value={styles[`\( {stylePrefix}Right`] || ''} onChange={(e) => handleUpdateStyle(` \){stylePrefix}Right`, e.target.value)} className="bg-gray-900 text-xs p-1.5 border border-gray-700 rounded" />
+                        <input placeholder="Bottom" value={styles[`\( {stylePrefix}Bottom`] || ''} onChange={(e) => handleUpdateStyle(` \){stylePrefix}Bottom`, e.target.value)} className="bg-gray-900 text-xs p-1.5 border border-gray-700 rounded" />
+                        <input placeholder="Left" value={styles[`\( {stylePrefix}Left`] || ''} onChange={(e) => handleUpdateStyle(` \){stylePrefix}Left`, e.target.value)} className="bg-gray-900 text-xs p-1.5 border border-gray-700 rounded" />
                     </div>
                 </div>
             );
@@ -449,8 +563,16 @@ ${bodyHtml}
                             {activeTab === 'add' && (
                                 <div className="space-y-4">
                                     <p className="text-xs text-gray-500 italic mb-2">Select an element on canvas to insert into.</p>
+                                    {/* New: Search input */}
+                                    <input 
+                                        type="text" 
+                                        placeholder="Search elements..." 
+                                        value={elementSearch} 
+                                        onChange={(e) => setElementSearch(e.target.value)} 
+                                        className="w-full bg-gray-900 text-xs p-2 rounded border border-gray-700 mb-4"
+                                    />
                                     <div className="grid grid-cols-2 gap-2">
-                                        {ElementsLibrary.map((el, i) => (
+                                        {filteredElements.map((el, i) => (
                                             <button 
                                                 key={i} 
                                                 onClick={() => handleAddElement(el)}
@@ -475,7 +597,7 @@ ${bodyHtml}
                     {/* CENTER CANVAS AREA */}
                     <main className="flex-1 flex flex-col min-w-0">
                         
-                        {/* Top Toolbar */}
+                        {/* Top Toolbar (Added undo/redo) */}
                         <header className="h-14 bg-[#252526] border-b border-[#333] flex items-center justify-between px-4 shadow-sm z-10">
                             <div className="flex items-center gap-2">
                                 <div className="flex bg-[#1e1e1e] rounded-md p-1 border border-[#333]">
@@ -487,6 +609,8 @@ ${bodyHtml}
                             </div>
 
                             <div className="flex items-center gap-3">
+                                <button onClick={handleUndo} disabled={historyIndex <= 0} className="text-gray-400 hover:text-white p-1" title="Undo"><Icon name="Undo" size={16}/></button>
+                                <button onClick={handleRedo} disabled={historyIndex >= history.length - 1} className="text-gray-400 hover:text-white p-1" title="Redo"><Icon name="Redo" size={16}/></button>
                                 <button 
                                     onClick={handleDownload}
                                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition"
@@ -497,7 +621,7 @@ ${bodyHtml}
                         </header>
 
                         {/* Canvas Wrapper */}
-                        <div className="flex-1 overflow-auto bg-[#1e1e1e] p-4 flex justify-center custom-scrollbar" style={{ backgroundImage: 'radial-gradient(#333 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                        <div className="flex-1 overflow-auto bg-[#1e1e1e] p-4 flex justify-center custom-scrollbar canvas-container" style={{ backgroundImage: 'radial-gradient(#333 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
                             <div 
                                 className="bg-white text-black shadow-2xl transition-all duration-300 relative"
                                 style={{ 
@@ -511,7 +635,7 @@ ${bodyHtml}
                         </div>
                     </main>
 
-                    {/* RIGHT SIDEBAR (Style Editor) */}
+                    {/* RIGHT SIDEBAR (Style Editor - Added name edit, attrs panel, more styles) */}
                     <aside className="w-72 bg-[#252526] border-l border-[#333] flex flex-col overflow-y-auto custom-scrollbar">
                         <div className="p-4 border-b border-[#333] flex items-center justify-between sticky top-0 bg-[#252526] z-10">
                             <div className="flex items-center gap-2">
@@ -521,27 +645,43 @@ ${bodyHtml}
                                 </h2>
                             </div>
                             {selectedId !== 'root' && (
-                                <button onClick={handleDelete} className="text-red-400 hover:text-red-300 p-1" title="Delete Element">
-                                    <Icon name="Trash2" size={16}/>
-                                </button>
+                                <div className="flex gap-2">
+                                    <button onClick={() => handleMove('up')} className="text-gray-400 hover:text-white p-1" title="Move Up"><Icon name="ArrowUp" size={16}/></button>
+                                    <button onClick={() => handleMove('down')} className="text-gray-400 hover:text-white p-1" title="Move Down"><Icon name="ArrowDown" size={16}/></button>
+                                    <button onClick={handleDelete} className="text-red-400 hover:text-red-300 p-1" title="Delete Element">
+                                        <Icon name="Trash2" size={16}/>
+                                    </button>
+                                </div>
                             )}
                         </div>
 
                         <div className="p-4 space-y-2">
                             
-                            {/* CONTENT EDITING */}
-                            {(!selectedNode.children || selectedNode.children.length === 0 || selectedNode.tag === 'img') && selectedNode.id !== 'root' && (
+                            {/* BASIC INFO (New: Edit Name) */}
+                            <ControlGroup title="Basic">
+                                <InputControl label="Name" value={selectedNode.name} onChange={handleUpdateName} placeholder="Element Name" />
+                            </ControlGroup>
+
+                            {/* CONTENT EDITING (Updated: only if no children or special tags) */}
+                            {selectedNode.children.length === 0 && !['img', 'input', 'textarea'].includes(selectedNode.tag) && selectedNode.id !== 'root' && (
                                 <ControlGroup title="Content">
                                     <div className="mb-2">
-                                        <label className="text-xs text-gray-400 block mb-1">
-                                            {selectedNode.tag === 'img' ? 'Image URL' : 'Text Content'}
-                                        </label>
+                                        <label className="text-xs text-gray-400 block mb-1">Text Content</label>
                                         <textarea 
                                             value={selectedNode.content} 
                                             onChange={(e) => handleUpdateContent(e.target.value)}
                                             className="w-full bg-gray-900 text-xs text-gray-100 p-2 rounded border border-gray-700 focus:border-blue-500 focus:outline-none min-h-[60px]"
                                         />
                                     </div>
+                                </ControlGroup>
+                            )}
+
+                            {/* ATTRIBUTES (New: Edit attrs like src, href, type) */}
+                            {Object.keys(selectedNode.attrs).length > 0 && (
+                                <ControlGroup title="Attributes">
+                                    {Object.entries(selectedNode.attrs).map(([key, value]) => (
+                                        <InputControl key={key} label={key.charAt(0).toUpperCase() + key.slice(1)} value={value} onChange={(v) => handleUpdateAttr(key, v)} placeholder={`Enter ${key}`} />
+                                    ))}
                                 </ControlGroup>
                             )}
 
@@ -608,7 +748,7 @@ ${bodyHtml}
                                 <StyleFourWay label="Margin (Outer)" stylePrefix="margin" styles={selectedNode.styles} />
                             </ControlGroup>
 
-                            {/* TYPOGRAPHY PANEL */}
+                            {/* TYPOGRAPHY PANEL (Added textTransform) */}
                             <ControlGroup title="Typography">
                                 <InputControl label="Font Size" value={selectedNode.styles.fontSize} onChange={(v) => handleUpdateStyle('fontSize', v)} placeholder="16px, 2rem..." />
                                 <SelectControl 
@@ -637,9 +777,15 @@ ${bodyHtml}
                                     options={[ { label: 'Left', value: 'left' }, { label: 'Center', value: 'center' }, { label: 'Right', value: 'right' } ]}
                                 />
                                 <InputControl label="Line Height" value={selectedNode.styles.lineHeight} onChange={(v) => handleUpdateStyle('lineHeight', v)} placeholder="1.5" />
+                                <SelectControl 
+                                    label="Transform" 
+                                    value={selectedNode.styles.textTransform} 
+                                    onChange={(v) => handleUpdateStyle('textTransform', v)}
+                                    options={[ { label: 'None', value: 'none' }, { label: 'Uppercase', value: 'uppercase' }, { label: 'Lowercase', value: 'lowercase' }, { label: 'Capitalize', value: 'capitalize' } ]}
+                                />
                             </ControlGroup>
 
-                            {/* BACKGROUND PANEL */}
+                            {/* BACKGROUND PANEL (Added position if image) */}
                             <ControlGroup title="Background">
                                 <div className="flex items-center justify-between mb-2">
                                      <label className="text-xs text-gray-400 w-1/3">Color</label>
@@ -648,7 +794,7 @@ ${bodyHtml}
                                          <input type="text" value={selectedNode.styles.backgroundColor || ''} onChange={(e) => handleUpdateStyle('backgroundColor', e.target.value)} className="flex-1 bg-gray-900 text-xs p-1 rounded border border-gray-700" placeholder="#fff or transparent" />
                                      </div>
                                 </div>
-                                <InputControl label="Image URL" value={selectedNode.styles.backgroundImage} onChange={(v) => handleUpdateStyle('backgroundImage', v ? `url(${v})` : '')} placeholder="https://..." />
+                                <InputControl label="Image URL" value={selectedNode.styles.backgroundImage?.replace(/url\((.+)\)/, '$1') || ''} onChange={(v) => handleUpdateStyle('backgroundImage', v ? `url(${v})` : '')} placeholder="https://..." />
                                 {selectedNode.styles.backgroundImage && (
                                     <>
                                         <SelectControl 
@@ -686,6 +832,12 @@ ${bodyHtml}
                                 />
                             </ControlGroup>
 
+                            {/* EFFECTS PANEL (New: opacity, boxShadow) */}
+                            <ControlGroup title="Effects">
+                                <InputControl label="Opacity" type="number" value={selectedNode.styles.opacity || '1'} onChange={(v) => handleUpdateStyle('opacity', Math.min(1, Math.max(0, v)))} placeholder="0-1" />
+                                <InputControl label="Shadow" value={selectedNode.styles.boxShadow} onChange={(v) => handleUpdateStyle('boxShadow', v)} placeholder="0 4px 6px rgba(0,0,0,0.1)" />
+                            </ControlGroup>
+
                         </div>
                     </aside>
                 </div>
@@ -697,6 +849,4 @@ ${bodyHtml}
         root.render(<App />);
     </script>
 </body>
-</html>
-
-
+    </html>
