@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nexus P2P Messenger</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- PeerJS for P2P Networking -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+        
+        /* Hide element completely */
+        .force-hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-sans h-[100dvh] flex overflow-hidden">
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 transition-all duration-300 pointer-events-none"></div>
+
+    <!-- Sidebar / Connection Screen -->
+    <div id="sidebar" class="w-full md:w-80 border-r border-zinc-800 flex flex-col shrink-0 transition-all duration-300 bg-zinc-950 z-10">
+        <div class="p-6">
+            <!-- Logo -->
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20">
+                    <i class="ph-fill ph-lightning text-xl text-white"></i>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight text-white">Nexus P2P</h1>
+            </div>
+
+            <!-- My ID Section -->
+            <div class="bg-zinc-900 rounded-2xl p-5 mb-8 border border-zinc-800/50 shadow-sm">
+                <label class="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-3 block">
+                    Your Public ID
+                </label>
+                <div class="flex items-center gap-2 bg-black/40 rounded-xl p-1 pl-3 border border-zinc-800">
+                    <code id="myIdDisplay" class="flex-1 text-xs truncate text-blue-400 font-mono">
+                        Generating...
+                    </code>
+                    <button id="copyBtn" class="p-2.5 hover:bg-zinc-800 rounded-lg transition-colors group cursor-pointer" title="Copy ID">
+                        <i id="copyIcon" class="ph ph-copy text-zinc-400 group-hover:text-white transition-colors"></i>
+                    </button>
+                </div>
+                <p class="text-[10px] text-zinc-500 mt-3 leading-relaxed">
+                    Share this ID with a friend. They need to paste it below to start a secure, direct chat.
+                </p>
+            </div>
+
+            <!-- Connect Section -->
+            <div class="space-y-4">
+                <label class="text-[10px] uppercase tracking-widest text-zinc-500 font-bold block">
+                    Connect to Friend
+                </label>
+                <div class="flex flex-col gap-3">
+                    <div class="relative flex items-center">
+                        <i class="ph ph-user-plus absolute left-4 text-zinc-500"></i>
+                        <input 
+                            type="text" 
+                            id="targetIdInput"
+                            placeholder="Paste Friend's ID..." 
+                            class="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3.5 pl-11 pr-4 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all placeholder:text-zinc-600 disabled:opacity-50"
+                        >
+                    </div>
+                    <button 
+                        id="connectBtn"
+                        disabled
+                        class="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 active:scale-[0.98]"
+                    >
+                        <i id="connectBtnIcon" class="ph ph-plugs-connected text-lg hidden md:block"></i>
+                        <span id="connectBtnText">Initializing...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="mt-auto p-6 space-y-4">
+            <div class="bg-blue-950/20 border border-blue-900/30 rounded-xl p-4">
+                <div class="flex items-center gap-2 text-blue-400 mb-1.5">
+                    <i class="ph-fill ph-shield-check text-sm"></i>
+                    <span class="text-[10px] font-bold uppercase tracking-wider">Privacy Active</span>
+                </div>
+                <p class="text-[11px] text-zinc-400 leading-relaxed">
+                    Zero database storage. Messages are transmitted directly via WebRTC encryption.
+                </p>
+            </div>
+            <div class="flex items-center justify-between text-[10px] text-zinc-500 font-medium px-2 uppercase tracking-wider">
+                <span class="flex items-center gap-1.5">
+                    <i id="statusIcon" class="ph-fill ph-wifi-none text-zinc-600 text-sm"></i>
+                    <span id="statusText">OFFLINE</span>
+                </span>
+                <span>V 2.0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div id="mainArea" class="hidden md:flex flex-1 flex-col relative overflow-hidden bg-zinc-950">
+        
+        <!-- Welcome Screen (Visible when no active connection) -->
+        <div id="welcomeScreen" class="flex-1 flex flex-col items-center justify-center text-center p-8 md:p-12">
+            <div class="w-24 h-24 bg-zinc-900 rounded-[2rem] flex items-center justify-center mb-8 border border-zinc-800 shadow-xl shadow-black/50">
+                <i class="ph-fill ph-chat-circle-text text-5xl text-zinc-700"></i>
+            </div>
+            <h2 class="text-3xl font-bold mb-3 text-white">Direct P2P Link</h2>
+            <p class="text-zinc-400 max-w-md text-sm mb-10 leading-relaxed">
+                Connect directly to your peers without a middleman server. Enter a friend's ID on the left to establish a secure, private communication channel.
+            </p>
+            <div class="grid grid-cols-2 gap-4 w-full max-w-md">
+                <div class="bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800/50 flex flex-col items-center text-center">
+                    <i class="ph-fill ph-lock-key text-blue-500 text-2xl mb-3"></i>
+                    <h4 class="text-sm font-bold text-zinc-200 mb-1">Encrypted</h4>
+                    <p class="text-[11px] text-zinc-500">End-to-end security</p>
+                </div>
+                <div class="bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800/50 flex flex-col items-center text-center">
+                    <i class="ph-fill ph-database text-rose-500 text-2xl mb-3"></i>
+                    <h4 class="text-sm font-bold text-zinc-200 mb-1">Serverless</h4>
+                    <p class="text-[11px] text-zinc-500">Zero data retention</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Screen (Visible when connected) -->
+        <div id="chatScreen" class="hidden flex-1 flex-col h-full bg-[#0a0a0c]">
+            <!-- Chat Header -->
+            <div class="p-4 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-950/80 backdrop-blur-md z-10">
+                <div class="flex items-center gap-3">
+                    <!-- Back button for mobile -->
+                    <button id="backBtn" class="md:hidden p-2 -ml-2 text-zinc-400 hover:text-white transition-colors active:scale-95">
+                        <i class="ph ph-caret-left text-2xl"></i>
+                    </button>
+                    
+                    <div class="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 border border-zinc-700">
+                        <i class="ph-fill ph-user text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-sm text-zinc-100">Anonymous Peer</h2>
+                        <p class="text-[11px] text-green-400 flex items-center gap-1.5 font-medium tracking-wide">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse"></span> 
+                            Directly Connected
+                        </p>
+                    </div>
+                </div>
+                <div class="flex gap-1">
+                    <button class="p-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-all">
+                        <i class="ph ph-phone text-lg"></i>
+                    </button>
+                    <button class="p-2.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-all">
+                        <i class="ph ph-dots-three-vertical text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div id="messageList" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 scroll-smooth flex flex-col">
+                <!-- Messages appended here via JS -->
+            </div>
+
+            <!-- Input Area -->
+            <form id="sendForm" class="p-4 bg-zinc-950/90 backdrop-blur-sm border-t border-zinc-800/80 pb-6 md:pb-4">
+                <div class="max-w-4xl mx-auto flex items-end gap-2 bg-zinc-900 border border-zinc-700/50 rounded-2xl p-1.5 focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-blue-500/50 transition-all shadow-inner shadow-black/20">
+                    <button type="button" class="p-3 text-zinc-400 hover:text-white transition-colors shrink-0">
+                        <i class="ph ph-smiley text-xl"></i>
+                    </button>
+                    
+                    <textarea 
+                        id="messageInput"
+                        rows="1"
+                        placeholder="Type an encrypted message..."
+                        class="flex-1 bg-transparent border-none outline-none p-2 py-3 text-sm text-zinc-100 resize-none max-h-32 placeholder:text-zinc-500"
+                        style="min-height: 44px;"
+                    ></textarea>
+                    
+                    <button 
+                        type="submit"
+                        id="sendBtn"
+                        disabled
+                        class="bg-blue-600 p-3 rounded-xl text-white hover:bg-blue-500 disabled:opacity-30 disabled:hover:bg-blue-600 transition-all active:scale-95 shrink-0 shadow-md shadow-blue-900/20 mb-0.5 mr-0.5"
+                    >
+                        <i class="ph-fill ph-paper-plane-tilt text-lg"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const DOM = {
+            myIdDisplay: document.getElementById('myIdDisplay'),
+            copyBtn: document.getElementById('copyBtn'),
+            copyIcon: document.getElementById('copyIcon'),
+            targetIdInput: document.getElementById('targetIdInput'),
+            connectBtn: document.getElementById('connectBtn'),
+            connectBtnText: document.getElementById('connectBtnText'),
+            connectBtnIcon: document.getElementById('connectBtnIcon'),
+            statusText: document.getElementById('statusText'),
+            statusIcon: document.getElementById('statusIcon'),
+            messageList: document.getElementById('messageList'),
+            messageInput: document.getElementById('messageInput'),
+            sendForm: document.getElementById('sendForm'),
+            sendBtn: document.getElementById('sendBtn'),
+            sidebar: document.getElementById('sidebar'),
+            mainArea: document.getElementById('mainArea'),
+            welcomeScreen: document.getElementById('welcomeScreen'),
+            chatScreen: document.getElementById('chatScreen'),
+            backBtn: document.getElementById('backBtn'),
+            toastContainer: document.getElementById('toastContainer')
+        };
+
+        // App State
+        let peer = null;
+        let myId = '';
+        let connection = null;
+        let status = 'initializing'; // initializing, ready, connecting, connected
+
+        // Auto-resize textarea
+        DOM.messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            if(this.value.trim() === '') this.style.height = 'auto';
+            DOM.sendBtn.disabled = !this.value.trim();
+        });
+
+        // Handle Enter key to send (Shift+Enter for newline)
+        DOM.messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (this.value.trim()) DOM.sendForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Toast Notification System
+        function showToast(message, isError = false) {
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-2 rounded-xl text-sm font-medium shadow-lg transform translate-y-[-100%] opacity-0 transition-all duration-300 flex items-center gap-2 ${
+                isError ? 'bg-red-500 text-white' : 'bg-zinc-800 border border-zinc-700 text-zinc-100'
+            }`;
+            
+            toast.innerHTML = `
+                <i class="ph-fill ${isError ? 'ph-warning-circle' : 'ph-info'} text-lg"></i>
+                ${message}
+            `;
+            
+            DOM.toastContainer.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-y-[-100%]', 'opacity-0');
+            }, 10);
+
+            // Animate out and remove
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-100%]', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize PeerJS
+        function initApp() {
+            peer = new Peer();
+            
+            peer.on('open', (id) => {
+                myId = id;
+                DOM.myIdDisplay.textContent = id;
+                updateStatus('ready');
+            });
+
+            // Incoming connection
+            peer.on('connection', (conn) => {
+                setupConnection(conn);
+            });
+
+            peer.on('error', (err) => {
+                console.error("Peer error:", err);
+                showToast("Connection error: " + err.type, true);
+                updateStatus('ready');
+            });
+
+            // Event Listeners
+            DOM.copyBtn.addEventListener('click', copyMyId);
+            DOM.connectBtn.addEventListener('click', connectToPeer);
+            DOM.sendForm.addEventListener('submit', sendMessage);
+            DOM.backBtn.addEventListener('click', () => {
+                if (connection) {
+                    connection.close(); // Triggers close event and updates UI
+                }
+            });
+        }
+
+        // Setup Connection Event Handlers
+        function setupConnection(conn) {
+            updateStatus('connecting');
+            
+            conn.on('open', () => {
+                connection = conn;
+                updateStatus('connected');
+                DOM.messageList.innerHTML = ''; // Clear chat on new connection
+                renderSystemMessage('Secure peer-to-peer connection established.');
+            });
+
+            conn.on('data', (data) => {
+                renderMessage(data, false);
+            });
+
+            conn.on('close', () => {
+                connection = null;
+                updateStatus('ready');
+                renderSystemMessage('Connection closed by peer.');
+                showToast("Peer disconnected", true);
+            });
+            
+            conn.on('error', (err) => {
+                showToast("Connection lost.", true);
+            });
+        }
+
+        // Initiate outgoing connection
+        function connectToPeer() {
+            const targetId = DOM.targetIdInput.value.trim();
+            if (!peer || !targetId || targetId === myId) {
+                if (targetId === myId) showToast("You cannot connect to yourself.", true);
+                return;
+            }
+            
+            updateStatus('connecting');
+            const conn = peer.connect(targetId, { reliable: true });
+            setupConnection(conn);
+        }
+
+        // Send a message
+        function sendMessage(e) {
+            e.preventDefault();
+            const text = DOM.messageInput.value.trim();
+            if (!text || !connection) return;
+
+            // Send via WebRTC Data Channel
+            connection.send(text);
+            
+            // Render locally
+            renderMessage(text, true);
+            
+            // Reset input
+            DOM.messageInput.value = '';
+            DOM.messageInput.style.height = 'auto';
+            DOM.sendBtn.disabled = true;
+        }
+
+        // Render system messages (center aligned)
+        function renderSystemMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'flex justify-center my-3 w-full';
+            div.innerHTML = `
+                <span class="text-[10px] bg-zinc-900/80 text-zinc-500 px-4 py-1.5 rounded-full border border-zinc-800 uppercase tracking-widest font-bold shadow-sm">
+                    ${escapeHTML(text)}
+                </span>
+            `;
+            DOM.messageList.appendChild(div);
+            scrollToBottom();
+        }
+
+        // Render user messages
+        function renderMessage(text, isMe) {
+            const div = document.createElement('div');
+            div.className = `flex ${isMe ? 'justify-end' : 'justify-start'} w-full animate-[fadeIn_0.2s_ease-out]`;
+            
+            const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            div.innerHTML = `
+                <div class="max-w-[85%] md:max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'} group">
+                    <div class="p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm relative ${
+                        isMe 
+                            ? 'bg-blue-600 text-white rounded-br-sm' 
+                            : 'bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-bl-sm'
+                    } break-words whitespace-pre-wrap">
+                        ${escapeHTML(text)}
+                    </div>
+                    <span class="text-[10px] text-zinc-600 mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        ${timeString}
+                    </span>
+                </div>
+            `;
+            DOM.messageList.appendChild(div);
+            scrollToBottom();
+        }
+
+        // Utils
+        function scrollToBottom() {
+            setTimeout(() => {
+                DOM.messageList.scrollTop = DOM.messageList.scrollHeight;
+            }, 50);
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag]));
+        }
+
+        // Update UI state machine
+        function updateStatus(newStatus) {
+            status = newStatus;
+            
+            // Text and Icons
+            DOM.statusText.textContent = status.toUpperCase();
+            
+            if (status === 'initializing') {
+                DOM.connectBtn.disabled = true;
+                DOM.connectBtnText.textContent = 'Initializing Server...';
+                DOM.statusIcon.className = 'ph-fill ph-wifi-none text-zinc-600';
+            } else if (status === 'ready') {
+                DOM.connectBtn.disabled = false;
+                DOM.connectBtnText.textContent = 'Connect';
+                DOM.connectBtnIcon.className = 'ph-fill ph-plugs-connected text-lg hidden md:block';
+                DOM.statusIcon.className = 'ph-fill ph-wifi-high text-yellow-500';
+                DOM.targetIdInput.disabled = false;
+                
+                // Show Sidebar, Hide Chat on Mobile
+                DOM.sidebar.classList.remove('force-hidden');
+                DOM.sidebar.classList.add('flex');
+                
+                DOM.mainArea.classList.add('hidden', 'md:flex');
+                DOM.mainArea.classList.remove('flex');
+                
+                DOM.welcomeScreen.classList.remove('hidden');
+                DOM.chatScreen.classList.add('hidden');
+                DOM.chatScreen.classList.remove('flex');
+
+            } else if (status === 'connecting') {
+                DOM.connectBtn.disabled = true;
+                DOM.connectBtnText.textContent = 'Establishing Link...';
+                DOM.connectBtnIcon.className = 'ph ph-spinner text-lg animate-spin hidden md:block';
+                DOM.targetIdInput.disabled = true;
+            } else if (status === 'connected') {
+                DOM.statusIcon.className = 'ph-fill ph-wifi-high text-green-500';
+                
+                // Hide Sidebar, Show Chat on Mobile
+                DOM.sidebar.classList.add('force-hidden', 'md:flex');
+                DOM.sidebar.classList.remove('flex');
+                
+                DOM.mainArea.classList.remove('hidden');
+                DOM.mainArea.classList.add('flex');
+                
+                DOM.welcomeScreen.classList.add('hidden');
+                DOM.chatScreen.classList.remove('hidden');
+                DOM.chatScreen.classList.add('flex');
+                
+                DOM.targetIdInput.value = ''; // clear input
+                scrollToBottom();
+            }
+        }
+
+        // Copy ID to clipboard
+        function copyMyId() {
+            if (!myId) return;
+            
+            // Clipboard API (May fail in iframe)
+            try {
+                navigator.clipboard.writeText(myId).then(() => {
+                    indicateCopied();
+                }).catch(() => {
+                    fallbackCopyText(myId);
+                });
+            } catch (err) {
+                fallbackCopyText(myId);
+            }
+        }
+
+        // Fallback for iframe execution environments
+        function fallbackCopyText(text) {
+            var textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                indicateCopied();
+            } catch (err) {
+                showToast("Failed to copy ID", true);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function indicateCopied() {
+            DOM.copyIcon.className = 'ph-fill ph-check-circle text-green-500';
+            showToast("ID copied to clipboard!");
+            setTimeout(() => {
+                DOM.copyIcon.className = 'ph ph-copy text-zinc-400 group-hover:text-white transition-colors';
+            }, 2000);
+        }
+
+        // Start application
+        window.addEventListener('load', initApp);
+    </script>
+</body>
+</html>
+
