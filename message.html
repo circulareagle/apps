@@ -282,7 +282,17 @@
 
         // Initialize PeerJS
         function initApp() {
-            peer = new Peer();
+            // Added explicit STUN servers to help bypass strict routers/firewalls
+            peer = new Peer({
+                config: {
+                    'iceServers': [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' }
+                    ]
+                },
+                debug: 1 // Enables basic warning logging in console
+            });
             
             peer.on('open', (id) => {
                 myId = id;
@@ -297,8 +307,14 @@
 
             peer.on('error', (err) => {
                 console.error("Peer error:", err);
-                showToast("Connection error: " + err.type, true);
+                showToast("Error: " + (err.message || err.type), true);
                 updateStatus('ready');
+            });
+
+            // Automatically reconnect to signaling server if disconnected
+            peer.on('disconnected', () => {
+                console.log("Disconnected from signaling server. Attempting reconnect...");
+                peer.reconnect();
             });
 
             // Event Listeners
@@ -330,11 +346,12 @@
             conn.on('close', () => {
                 connection = null;
                 updateStatus('ready');
-                renderSystemMessage('Connection closed by peer.');
+                renderSystemMessage('Connection closed by peer or network drop.');
                 showToast("Peer disconnected", true);
             });
             
             conn.on('error', (err) => {
+                console.error("Connection error:", err);
                 showToast("Connection lost.", true);
             });
         }
@@ -521,4 +538,5 @@
     </script>
 </body>
 </html>
+
 
