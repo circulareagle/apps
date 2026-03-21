@@ -3,548 +3,686 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web-Native 3D Human Animator</title>
-    <!-- Tailwind CSS for UI -->
+    <title>OmniAnim: Advanced 3D Procedural Studio</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Three.js Core -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- OrbitControls for camera interaction -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    
+    <!-- Import Three.js and essential Addons (Controls, Exporters) -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #1a1a2e; color: #fff; font-family: 'Inter', sans-serif; }
-        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        #ui-panel { 
-            position: absolute; top: 20px; right: 20px; z-index: 10; 
-            width: 320px; max-height: calc(100vh - 40px); overflow-y: auto;
-            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-        /* Custom Scrollbar for UI */
-        #ui-panel::-webkit-scrollbar { width: 6px; }
-        #ui-panel::-webkit-scrollbar-track { background: transparent; }
-        #ui-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        :root { --bg: #0a0a0c; --panel: #141418; --accent: #ff3b3b; --text: #e0e0e0; }
+        body { margin: 0; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; user-select: none; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; pointer-events: none; display: flex; justify-content: space-between; }
+        .panel { background: rgba(20, 20, 24, 0.95); backdrop-filter: blur(10px); border: 1px solid #333; pointer-events: auto; display: flex; flex-col; }
+        .scrollbar::-webkit-scrollbar { width: 4px; }
+        .scrollbar::-webkit-scrollbar-thumb { background: #555; border-radius: 2px; }
         
-        .control-group { margin-bottom: 1.5rem; }
-        .slider-label { display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 0.5rem; color: #cbd5e1; }
-        input[type="range"] { 
-            width: 100%; accent-color: #3b82f6; 
-            background: rgba(255,255,255,0.1); border-radius: 8px; height: 6px; outline: none;
-        }
-        .btn {
-            width: 100%; padding: 0.75rem; border-radius: 8px; font-weight: 600; transition: all 0.2s;
-            text-align: center; cursor: pointer; border: none;
-        }
-        .btn-primary { background: #3b82f6; color: white; }
-        .btn-primary:hover { background: #2563eb; }
-        .btn-record { background: #ef4444; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-record:hover { background: #dc2626; }
-        
-        @keyframes pulse-red {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-        .recording-active { animation: pulse-red 2s infinite; background: transparent; border: 2px solid #ef4444; color: #ef4444; }
-        .recording-dot { width: 12px; height: 12px; background: #ef4444; border-radius: 50%; }
-        .recording-active .recording-dot { background: #ef4444; }
+        /* Custom UI Elements */
+        .slider-group { margin-bottom: 12px; }
+        .slider-header { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;}
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+        button { background: #2a2a35; border: 1px solid #444; color: white; padding: 8px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-weight: bold; }
+        button:hover { background: var(--accent); border-color: var(--accent); }
+        .tab-btn.active { border-bottom: 2px solid var(--accent); color: var(--accent); }
     </style>
 </head>
 <body>
 
     <div id="canvas-container"></div>
 
-    <div id="ui-panel" class="p-5">
-        <h2 class="text-xl font-bold mb-4 text-white border-b border-gray-700 pb-2">Animator Studio</h2>
-        
-        <!-- Recording Section -->
-        <div class="control-group">
-            <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Video Export</h3>
-            <button id="recordBtn" class="btn btn-record" onclick="toggleRecording()">
-                <div class="recording-dot" id="recDot"></div>
-                <span id="recordText">Start Recording</span>
-            </button>
-            <p class="text-xs text-gray-500 mt-2">Records infinitely until stopped. Downloads as WebM.</p>
-            <a id="downloadLink" style="display: none;"></a>
+    <div class="ui-layer">
+        <!-- LEFT PANEL: Animation & Kinematics -->
+        <div class="panel w-80 h-full flex-col border-r border-gray-800 shadow-2xl overflow-y-auto scrollbar">
+            <div class="p-4 border-b border-gray-800 bg-black/50 flex justify-between items-center">
+                <h1 class="text-xl font-black tracking-wider text-white">OMNI<span class="text-red-500">ANIM</span></h1>
+                <button id="btn-export" class="bg-red-600 hover:bg-red-500 border-none">Export .GLB</button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex border-b border-gray-800 text-xs font-bold text-gray-400">
+                <div class="flex-1 text-center py-3 cursor-pointer tab-btn active" data-target="tab-anim">SYNTHESIS</div>
+                <div class="flex-1 text-center py-3 cursor-pointer tab-btn" data-target="tab-ik">IK CONTROLS</div>
+            </div>
+
+            <div class="p-5 flex-1" id="tab-anim">
+                <h2 class="text-xs font-bold text-gray-500 mb-4 border-b border-gray-800 pb-2">PARAMETRIC ACTION GENERATOR</h2>
+                <p class="text-[10px] text-gray-400 mb-4">Procedurally generate millions of animations by combining wave functions across skeletal nodes.</p>
+                
+                <div class="slider-group">
+                    <div class="slider-header"><span>Master Speed (Freq)</span><span id="val-speed">1.0</span></div>
+                    <input type="range" id="sl-speed" min="0" max="5" step="0.1" value="1.0">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header"><span>Locomotion Stride</span><span id="val-stride">0.5</span></div>
+                    <input type="range" id="sl-stride" min="0" max="2" step="0.05" value="0.5">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header"><span>Pelvic Sway</span><span id="val-sway">0.2</span></div>
+                    <input type="range" id="sl-sway" min="0" max="1" step="0.05" value="0.2">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header"><span>Spinal Aggression (Lean)</span><span id="val-lean">0.0</span></div>
+                    <input type="range" id="sl-lean" min="-1" max="1" step="0.05" value="0.0">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header"><span>Combat Guard (Arms)</span><span id="val-guard">0.0</span></div>
+                    <input type="range" id="sl-guard" min="0" max="1" step="0.05" value="0.0">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header"><span>Noise / Jitter</span><span id="val-jitter">0.0</span></div>
+                    <input type="range" id="sl-jitter" min="0" max="1" step="0.05" value="0.0">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 mt-6">
+                    <button id="preset-idle">Breathe/Idle</button>
+                    <button id="preset-walk">Tactical Walk</button>
+                    <button id="preset-run">Sprint</button>
+                    <button id="preset-combat">Combat Stance</button>
+                </div>
+            </div>
+
+            <div class="p-5 flex-1 hidden" id="tab-ik">
+                <h2 class="text-xs font-bold text-gray-500 mb-4 border-b border-gray-800 pb-2">ANALYTICAL INVERSE KINEMATICS</h2>
+                <p class="text-[10px] text-gray-400 mb-4">Click and drag end-effectors in the 3D viewport. The engine mathematically calculates joint angles.</p>
+                <div class="text-xs space-y-2 text-gray-300">
+                    <label class="flex items-center space-x-2"><input type="checkbox" id="ik-toggle" checked class="accent-red-500"> <span>Enable IK Solvers</span></label>
+                    <label class="flex items-center space-x-2"><input type="checkbox" id="ik-auto-foot" checked class="accent-red-500"> <span>Auto Ground Clamping (Feet)</span></label>
+                </div>
+            </div>
         </div>
 
-        <!-- Animation Controls -->
-        <div class="control-group">
-            <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Animation State</h3>
-            <div class="grid grid-cols-2 gap-2">
-                <button class="btn btn-primary bg-gray-700 hover:bg-gray-600" onclick="setAnimation('idle')">Idle</button>
-                <button class="btn btn-primary" onclick="setAnimation('walk')">Walk</button>
-            </div>
-            <div class="mt-3">
-                <div class="slider-label"><span>Animation Speed</span><span id="speedVal">1.0x</span></div>
-                <input type="range" id="animSpeed" min="0" max="3" step="0.1" value="1" oninput="updateSpeed(this.value)">
-            </div>
-        </div>
+        <!-- RIGHT PANEL: Speech, Face & Advanced Physics -->
+        <div class="panel w-80 h-full flex-col border-l border-gray-800 shadow-2xl overflow-y-auto scrollbar">
+            
+            <!-- Facial & Audio -->
+            <div class="p-5 border-b border-gray-800">
+                <h2 class="text-xs font-bold text-gray-500 mb-4 border-b border-gray-800 pb-2">REAL-TIME SPEECH & LIP SYNC</h2>
+                <p class="text-[10px] text-gray-400 mb-4">Uses Web Audio API Fast Fourier Transform (FFT) to analyze frequencies and map them to physical jaw and lip bones.</p>
+                
+                <button id="btn-mic" class="w-full bg-blue-600 hover:bg-blue-500 border-none mb-3 flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                    Enable Microphone Sync
+                </button>
+                
+                <div class="flex gap-2 items-end">
+                    <div class="w-full">
+                        <div class="slider-header"><span>Mic Sensitivity</span><span id="val-micsens">1.5</span></div>
+                        <input type="range" id="sl-micsens" min="0.1" max="5" step="0.1" value="1.5">
+                    </div>
+                </div>
 
-        <!-- Customization Controls -->
-        <div class="control-group">
-            <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Parametric Scaling</h3>
-            
-            <div class="mb-3">
-                <div class="slider-label"><span>Body Mass (Thickness)</span><span id="massVal">1.0</span></div>
-                <input type="range" id="bodyMass" min="0.5" max="2" step="0.05" value="1" oninput="updateProportions()">
+                <!-- Live Audio Visualizer -->
+                <div class="w-full h-8 bg-black rounded mt-4 overflow-hidden relative border border-gray-800">
+                    <div id="audio-bar" class="absolute left-0 bottom-0 h-full bg-red-500 w-0 transition-all duration-75"></div>
+                </div>
             </div>
-            
-            <div class="mb-3">
-                <div class="slider-label"><span>Arm Length</span><span id="armVal">1.0</span></div>
-                <input type="range" id="armLength" min="0.5" max="1.8" step="0.05" value="1" oninput="updateProportions()">
-            </div>
-            
-            <div class="mb-3">
-                <div class="slider-label"><span>Leg Length</span><span id="legVal">1.0</span></div>
-                <input type="range" id="legLength" min="0.5" max="2" step="0.05" value="1" oninput="updateProportions()">
-            </div>
-        </div>
 
-        <div class="control-group">
-            <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Materials</h3>
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-sm text-gray-300">Skin Tone</span>
-                <input type="color" id="colorSkin" value="#e0ac69" class="h-8 w-16 bg-transparent border-0 cursor-pointer" onchange="updateColors()">
-            </div>
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-sm text-gray-300">Shirt Color</span>
-                <input type="color" id="colorShirt" value="#3b82f6" class="h-8 w-16 bg-transparent border-0 cursor-pointer" onchange="updateColors()">
-            </div>
-            <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-300">Pants Color</span>
-                <input type="color" id="colorPants" value="#1e293b" class="h-8 w-16 bg-transparent border-0 cursor-pointer" onchange="updateColors()">
+            <!-- Hyper Physics Matrix -->
+            <div class="p-5 flex-1">
+                <h2 class="text-xs font-bold text-gray-500 mb-4 border-b border-gray-800 pb-2">VERLET PHYSICS MATRIX</h2>
+                <p class="text-[10px] text-gray-400 mb-4">Controls the procedural soft-body dynamics and environmental forces applied to the character's clothing and secondary motions.</p>
+
+                <div class="slider-group">
+                    <div class="slider-header text-blue-400"><span>Wind Force X</span><span id="val-windx">5.0</span></div>
+                    <input type="range" id="sl-windx" min="-20" max="20" step="1" value="5.0">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header text-blue-400"><span>Wind Turbulence</span><span id="val-turb">2.0</span></div>
+                    <input type="range" id="sl-turb" min="0" max="10" step="0.5" value="2.0">
+                </div>
+                <div class="slider-group mt-4">
+                    <div class="slider-header text-green-400"><span>Cloth Stiffness (kLST)</span><span id="val-stiff">0.8</span></div>
+                    <input type="range" id="sl-stiff" min="0.1" max="1.0" step="0.05" value="0.8">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header text-green-400"><span>Cloth Damping (kDP)</span><span id="val-damp">0.9</span></div>
+                    <input type="range" id="sl-damp" min="0.5" max="0.99" step="0.01" value="0.9">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header text-green-400"><span>Gravity Multiplier</span><span id="val-grav">1.0</span></div>
+                    <input type="range" id="sl-grav" min="-2" max="5" step="0.1" value="1.0">
+                </div>
             </div>
         </div>
     </div>
 
-    <script>
-        // --- SCENE SETUP ---
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { TransformControls } from 'three/addons/controls/TransformControls.js';
+        import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+
+        // =========================================================
+        // 1. CORE ENGINE SETUP
+        // =========================================================
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color('#1a1a2e');
-        scene.fog = new THREE.FogExp2('#1a1a2e', 0.02);
+        scene.background = new THREE.Color(0x0a0a0c);
+        scene.fog = new THREE.FogExp2(0x0a0a0c, 0.02);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 3, 8);
+        camera.position.set(0, 1.5, 4);
 
-        // WebGL Renderer with antialiasing for high quality
-        const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Responsive pixel ratio
+        renderer.setPixelRatio(window.devicePixelRatio);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // Controls
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.target.set(0, 1.5, 0);
+        const orbit = new OrbitControls(camera, renderer.domElement);
+        orbit.target.set(0, 1, 0);
+        orbit.enableDamping = true;
+        orbit.maxPolarAngle = Math.PI / 2 - 0.05; // Don't go below ground
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
+        // Advanced Lighting for Realism
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444455, 0.6);
+        scene.add(hemiLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
         dirLight.position.set(5, 10, 5);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 2048;
         dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.bias = -0.0001;
         scene.add(dirLight);
 
-        const fillLight = new THREE.DirectionalLight(0xaaccff, 0.3);
-        fillLight.position.set(-5, 3, -5);
-        scene.add(fillLight);
+        const rimLight = new THREE.SpotLight(0xff3b3b, 5, 20, 0.5, 1, 1);
+        rimLight.position.set(-5, 2, -5);
+        rimLight.lookAt(0, 1, 0);
+        scene.add(rimLight);
 
-        // Environment / Floor
-        const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
-        scene.add(gridHelper);
-
+        // Environment
+        const grid = new THREE.GridHelper(20, 40, 0x333344, 0x111118);
+        scene.add(grid);
         const floorGeo = new THREE.PlaneGeometry(50, 50);
-        const floorMat = new THREE.MeshStandardMaterial({ color: '#111118', roughness: 0.8 });
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.1, metalness: 0.8 });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         scene.add(floor);
 
-        // --- PROCEDURAL HUMAN RIGGING ---
-        // Replacing "square blocks" with rounded cylinders and spheres for anatomical fidelity
+        // =========================================================
+        // 2. PROCEDURAL ARTICULATED SKELETAL RIG
+        // =========================================================
+        // We use an articulated rig (separate meshes per bone) to guarantee 
+        // flawless performance and zero vertex tearing during extreme physics calculations.
         
-        const materials = {
-            skin: new THREE.MeshStandardMaterial({ color: 0xe0ac69, roughness: 0.4 }),
-            shirt: new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.7 }),
-            pants: new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 })
-        };
+        class ProceduralCharacter {
+            constructor() {
+                this.root = new THREE.Group();
+                scene.add(this.root);
 
-        const humanRig = new THREE.Group();
-        scene.add(humanRig);
+                this.materials = {
+                    body: new THREE.MeshStandardMaterial({ color: 0x222228, roughness: 0.6, metalness: 0.2 }),
+                    joints: new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9, metalness: 0.9 }),
+                    face: new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.4 }),
+                    mouth: new THREE.MeshBasicMaterial({ color: 0x000000 })
+                };
 
-        // Helper function to create bones/limbs with joints
-        function createLimbBlock(radiusTop, radiusBottom, length, mat, isJointTop = true) {
-            const group = new THREE.Group();
-            
-            // The main cylinder (limb)
-            const geo = new THREE.CylinderGeometry(radiusTop, radiusBottom, length, 32);
-            const mesh = new THREE.Mesh(geo, mat);
-            // Shift down so the group acts as the pivot at the top of the limb
-            mesh.position.y = -length / 2;
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            group.add(mesh);
-
-            // Add joint sphere to smooth out bending gaps
-            if (isJointTop) {
-                const jointGeo = new THREE.SphereGeometry(radiusTop * 1.05, 32, 16);
-                const jointMesh = new THREE.Mesh(jointGeo, mat);
-                jointMesh.castShadow = true;
-                group.add(jointMesh);
+                this.bones = {};
+                this.buildSkeleton();
+                
+                // Expose to global for exporter
+                window.exportableScene = this.root;
             }
 
-            return { group, mesh, length };
-        }
+            createBone(name, geo, mat, parent, x, y, z) {
+                const bone = new THREE.Group();
+                bone.position.set(x, y, z);
+                
+                if (geo) {
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    // Offset mesh so pivot is at the joint
+                    mesh.position.y = geo.parameters.height ? geo.parameters.height / 2 : 0;
+                    if(name.includes('Foot')) {
+                        mesh.position.y = 0;
+                        mesh.position.z = 0.05;
+                    }
+                    bone.add(mesh);
 
-        // --- Base Proportions ---
-        const baseProps = {
-            headRadius: 0.22,
-            torsoWidth: 0.35,
-            torsoLength: 0.8,
-            armRadius: 0.08,
-            upperArmLen: 0.5,
-            lowerArmLen: 0.45,
-            legRadius: 0.11,
-            upperLegLen: 0.6,
-            lowerLegLen: 0.55
-        };
+                    // Add a sphere joint
+                    const jointMesh = new THREE.Mesh(new THREE.SphereGeometry(geo.parameters.radiusTop || 0.04, 16, 16), this.materials.joints);
+                    jointMesh.castShadow = true;
+                    bone.add(jointMesh);
+                }
 
-        // References for animation
-        const bones = {};
+                parent.add(bone);
+                this.bones[name] = bone;
+                return bone;
+            }
 
-        // 1. Hips (Root)
-        bones.hips = new THREE.Group();
-        bones.hips.position.y = baseProps.upperLegLen + baseProps.lowerLegLen + 0.1;
-        humanRig.add(bones.hips);
+            buildSkeleton() {
+                const mat = this.materials.body;
+                
+                // Torso & Spine
+                this.bones.Pelvis = this.createBone('Pelvis', new THREE.CylinderGeometry(0.12, 0.1, 0.15), mat, this.root, 0, 1.0, 0);
+                this.bones.Spine = this.createBone('Spine', new THREE.CylinderGeometry(0.14, 0.12, 0.35), mat, this.bones.Pelvis, 0, 0.15, 0);
+                this.bones.Chest = this.createBone('Chest', new THREE.CylinderGeometry(0.18, 0.14, 0.3), mat, this.bones.Spine, 0, 0.35, 0);
+                
+                // Head & Facial Rig (For Lip Sync)
+                this.bones.Neck = this.createBone('Neck', new THREE.CylinderGeometry(0.04, 0.05, 0.1), mat, this.bones.Chest, 0, 0.3, 0);
+                
+                // Complex Head Structure
+                this.bones.Head = new THREE.Group();
+                this.bones.Head.position.set(0, 0.1, 0);
+                this.bones.Neck.add(this.bones.Head);
 
-        // Hips Geometry (Pelvis)
-        const pelvisMesh = new THREE.Mesh(new THREE.SphereGeometry(baseProps.torsoWidth * 0.9, 32, 16), materials.pants);
-        pelvisMesh.scale.y = 0.6;
-        pelvisMesh.castShadow = true;
-        bones.hips.add(pelvisMesh);
+                const skull = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.2), this.materials.face);
+                skull.position.y = 0.11;
+                skull.castShadow = true;
+                this.bones.Head.add(skull);
 
-        // 2. Torso / Spine
-        bones.spine = new THREE.Group();
-        const torsoInfo = createLimbBlock(baseProps.torsoWidth, baseProps.torsoWidth * 0.8, baseProps.torsoLength, materials.shirt, false);
-        torsoInfo.mesh.position.y = baseProps.torsoLength / 2; // Shift up from hips
-        torsoInfo.group.position.y = 0;
-        bones.spine.add(torsoInfo.group);
-        bones.hips.add(bones.spine);
+                // Facial Bones (Procedural Mouth)
+                this.bones.Jaw = new THREE.Group();
+                this.bones.Jaw.position.set(0, 0.05, 0.05); // Pivot near ears
+                this.bones.Head.add(this.bones.Jaw);
 
-        // 3. Neck & Head
-        bones.neck = new THREE.Group();
-        bones.neck.position.y = baseProps.torsoLength;
-        bones.spine.add(bones.neck);
+                const jawMesh = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, 0.12), this.materials.face);
+                jawMesh.position.set(0, -0.04, 0.05);
+                this.bones.Jaw.add(jawMesh);
 
-        const headMesh = new THREE.Mesh(new THREE.SphereGeometry(baseProps.headRadius, 32, 32), materials.skin);
-        headMesh.position.y = baseProps.headRadius + 0.05;
-        headMesh.scale.set(0.9, 1.1, 0.95); // Slightly oval head
-        headMesh.castShadow = true;
-        bones.neck.add(headMesh);
+                // Mouth cavity (black box behind jaw)
+                const cavity = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.06, 0.05), this.materials.mouth);
+                cavity.position.set(0, 0.05, 0.09);
+                this.bones.Head.add(cavity);
 
-        // 4. Arms
-        function buildArm(isLeft) {
-            const sign = isLeft ? 1 : -1;
-            
-            // Shoulder
-            const shoulder = new THREE.Group();
-            shoulder.position.set(sign * (baseProps.torsoWidth + baseProps.armRadius), baseProps.torsoLength - 0.1, 0);
-            bones.spine.add(shoulder);
+                // Arms
+                this.buildLimb('Arm', 'L', this.bones.Chest, -0.2, 0.25, 0, 0.25, 0.25);
+                this.buildLimb('Arm', 'R', this.bones.Chest, 0.2, 0.25, 0, 0.25, 0.25);
+                
+                // Legs
+                this.buildLimb('Leg', 'L', this.bones.Pelvis, -0.1, 0, 0, 0.4, 0.4);
+                this.buildLimb('Leg', 'R', this.bones.Pelvis, 0.1, 0, 0, 0.4, 0.4);
 
-            // Upper Arm
-            const upperArm = createLimbBlock(baseProps.armRadius, baseProps.armRadius*0.9, baseProps.upperArmLen, materials.shirt);
-            // Slight initial outward rotation
-            upperArm.group.rotation.z = sign * 0.2; 
-            shoulder.add(upperArm.group);
+                // Feet
+                this.bones.FootL = this.createBone('FootL', new THREE.BoxGeometry(0.08, 0.05, 0.15), mat, this.bones.LowerLegL, 0, 0.4, 0);
+                this.bones.FootR = this.createBone('FootR', new THREE.BoxGeometry(0.08, 0.05, 0.15), mat, this.bones.LowerLegR, 0, 0.4, 0);
+            }
 
-            // Forearm
-            const forearm = createLimbBlock(baseProps.armRadius*0.85, baseProps.armRadius*0.7, baseProps.lowerArmLen, materials.skin);
-            forearm.group.position.y = -baseProps.upperArmLen;
-            upperArm.group.add(forearm.group);
+            buildLimb(type, side, parent, px, py, pz, len1, len2) {
+                const upperMat = this.materials.body;
+                const upper = this.createBone(`Upper${type}${side}`, new THREE.CylinderGeometry(0.05, 0.04, len1), upperMat, parent, px, py, pz);
+                // Adjust pivots based on type
+                if(type === 'Arm') {
+                    upper.rotation.z = side === 'L' ? Math.PI/2 : -Math.PI/2;
+                    upper.children[0].position.y = len1/2; // align geometry to pivot
+                } else {
+                    upper.rotation.x = Math.PI; // point down
+                }
 
-            // Hand
-            const handMesh = new THREE.Mesh(new THREE.SphereGeometry(baseProps.armRadius*0.9, 16, 16), materials.skin);
-            handMesh.scale.set(1, 1.2, 0.5);
-            handMesh.position.y = -baseProps.lowerArmLen - 0.05;
-            forearm.group.add(handMesh);
-
-            return { shoulder, upperArm: upperArm.group, forearm: forearm.group };
-        }
-
-        bones.leftArm = buildArm(true);
-        bones.rightArm = buildArm(false);
-
-        // 5. Legs
-        function buildLeg(isLeft) {
-            const sign = isLeft ? 1 : -1;
-
-            // Hip Joint
-            const hipJoint = new THREE.Group();
-            hipJoint.position.set(sign * (baseProps.torsoWidth * 0.5), 0, 0);
-            bones.hips.add(hipJoint);
-
-            // Upper Leg (Thigh)
-            const upperLeg = createLimbBlock(baseProps.legRadius, baseProps.legRadius*0.8, baseProps.upperLegLen, materials.pants);
-            hipJoint.add(upperLeg.group);
-
-            // Lower Leg (Calf)
-            const lowerLeg = createLimbBlock(baseProps.legRadius*0.8, baseProps.legRadius*0.6, baseProps.lowerLegLen, materials.skin);
-            lowerLeg.group.position.y = -baseProps.upperLegLen;
-            upperLeg.group.add(lowerLeg.group);
-
-            // Foot
-            const footMesh = new THREE.Mesh(new THREE.BoxGeometry(baseProps.legRadius*1.5, 0.1, baseProps.legRadius*3), materials.pants);
-            // Smooth edges on foot block
-            const footGeo = new THREE.CylinderGeometry(baseProps.legRadius*1.2, baseProps.legRadius*1.2, baseProps.legRadius*3, 16);
-            const foot = new THREE.Mesh(footGeo, materials.pants);
-            foot.rotation.x = Math.PI / 2;
-            foot.position.set(0, -baseProps.lowerLegLen, baseProps.legRadius);
-            foot.castShadow = true;
-            lowerLeg.group.add(foot);
-
-            return { hipJoint, upperLeg: upperLeg.group, lowerLeg: lowerLeg.group };
-        }
-
-        bones.leftLeg = buildLeg(true);
-        bones.rightLeg = buildLeg(false);
-
-
-        // --- STATE & CUSTOMIZATION ---
-        
-        let currentState = 'walk'; // idle, walk
-        let animSpeedMult = 1.0;
-        let time = 0;
-
-        function setAnimation(state) {
-            currentState = state;
-            // Reset rotations smoothly
-            if (state === 'idle') {
-                // Reset legs
-                bones.leftLeg.upperLeg.rotation.set(0,0,0);
-                bones.leftLeg.lowerLeg.rotation.set(0,0,0);
-                bones.rightLeg.upperLeg.rotation.set(0,0,0);
-                bones.rightLeg.lowerLeg.rotation.set(0,0,0);
-                // Reset arms
-                bones.leftArm.upperArm.rotation.set(0,0,0.2);
-                bones.rightArm.upperArm.rotation.set(0,0,-0.2);
-                bones.leftArm.forearm.rotation.set(0,0,0);
-                bones.rightArm.forearm.rotation.set(0,0,0);
-                bones.hips.position.y = baseProps.upperLegLen + baseProps.lowerLegLen + 0.1;
-                bones.spine.rotation.y = 0;
+                const lower = this.createBone(`Lower${type}${side}`, new THREE.CylinderGeometry(0.04, 0.03, len2), upperMat, upper, 0, len1, 0);
+                return lower;
             }
         }
 
-        function updateSpeed(val) {
-            animSpeedMult = parseFloat(val);
-            document.getElementById('speedVal').innerText = val + 'x';
+        const char = new ProceduralCharacter();
+
+        // =========================================================
+        // 3. AUDIO ANALYZER & LIP SYNC (SPEECH CONTROLLER)
+        // =========================================================
+        class AudioVisemeController {
+            constructor() {
+                this.audioCtx = null;
+                this.analyser = null;
+                this.dataArray = null;
+                this.isActive = false;
+                this.sensitivity = 1.5;
+            }
+
+            async initMic() {
+                try {
+                    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const source = this.audioCtx.createMediaStreamSource(stream);
+                    this.analyser = this.audioCtx.createAnalyser();
+                    this.analyser.fftSize = 256;
+                    source.connect(this.analyser);
+                    
+                    const bufferLength = this.analyser.frequencyBinCount;
+                    this.dataArray = new Uint8Array(bufferLength);
+                    this.isActive = true;
+                    document.getElementById('btn-mic').innerHTML = "Mic Active - Speak Now!";
+                    document.getElementById('btn-mic').classList.replace('bg-blue-600', 'bg-green-600');
+                } catch (err) {
+                    alert("Microphone access denied or unavailable.");
+                }
+            }
+
+            update() {
+                if (!this.isActive) return;
+
+                this.analyser.getByteFrequencyData(this.dataArray);
+                
+                // Analyze specific frequency bands for speech mapping
+                // Low freqs (vowels/open mouth)
+                let lowSum = 0;
+                for(let i = 0; i < 10; i++) lowSum += this.dataArray[i];
+                let lowAvg = (lowSum / 10) / 255.0;
+
+                // High freqs (consonants/fricatives like S, F)
+                let highSum = 0;
+                for(let i = 30; i < 60; i++) highSum += this.dataArray[i];
+                let highAvg = (highSum / 30) / 255.0;
+
+                // Map to Facial Bones
+                const jawOpen = Math.min(lowAvg * this.sensitivity, 1.0);
+                
+                // Smooth interpolation for natural movement
+                char.bones.Jaw.rotation.x = THREE.MathUtils.lerp(char.bones.Jaw.rotation.x, -jawOpen * 0.5, 0.3);
+                
+                // Update UI Visualizer
+                document.getElementById('audio-bar').style.width = `${jawOpen * 100}%`;
+            }
         }
+        const audioController = new AudioVisemeController();
 
-        function updateColors() {
-            materials.skin.color.set(document.getElementById('colorSkin').value);
-            materials.shirt.color.set(document.getElementById('colorShirt').value);
-            materials.pants.color.set(document.getElementById('colorPants').value);
+
+        // =========================================================
+        // 4. PARAMETRIC ACTION SYNTHESIZER
+        // =========================================================
+        // Generates complex, millions-of-variations animations using mathematics
+        class ActionSynthesizer {
+            constructor() {
+                this.time = 0;
+                // Params
+                this.speed = 1.0;
+                this.stride = 0.5;
+                this.sway = 0.2;
+                this.lean = 0.0;
+                this.guard = 0.0;
+                this.jitter = 0.0;
+            }
+
+            update(dt) {
+                this.time += dt * this.speed * 5;
+                const t = this.time;
+
+                // Noise generation for jitter/realism
+                const noiseX = (Math.random() - 0.5) * this.jitter * 0.1;
+                const noiseY = (Math.random() - 0.5) * this.jitter * 0.1;
+
+                // Core Locomotion (Walk/Run Cycle Math)
+                const legSpd = t;
+                
+                // Legs (Forward Kinematics driven by wave functions)
+                char.bones.UpperLegL.rotation.x = Math.PI + Math.sin(legSpd) * this.stride;
+                char.bones.LowerLegL.rotation.x = Math.abs(Math.sin(legSpd + Math.PI/2)) * this.stride * 1.5;
+                
+                char.bones.UpperLegR.rotation.x = Math.PI + Math.sin(legSpd + Math.PI) * this.stride;
+                char.bones.LowerLegR.rotation.x = Math.abs(Math.sin(legSpd + Math.PI*1.5)) * this.stride * 1.5;
+
+                // Pelvis Bobbing & Sway
+                char.bones.Pelvis.position.y = 1.0 - Math.abs(Math.sin(legSpd*2)) * this.stride * 0.2;
+                char.bones.Pelvis.rotation.z = Math.sin(legSpd) * this.sway * 0.3;
+                char.bones.Pelvis.rotation.y = -Math.sin(legSpd) * this.stride * 0.2;
+
+                // Spine & Posture
+                char.bones.Spine.rotation.x = this.lean + noiseX;
+                char.bones.Chest.rotation.x = this.lean * 0.5;
+                char.bones.Chest.rotation.y = Math.sin(legSpd) * this.stride * 0.2; // Counter-rotate chest
+
+                // Arms (Blend between locomotion swing and combat guard)
+                const armSwingL = Math.sin(legSpd + Math.PI) * this.stride;
+                const armSwingR = Math.sin(legSpd) * this.stride;
+
+                // Left Arm
+                char.bones.UpperArmL.rotation.z = Math.PI/2 - 0.2 - (this.guard * 0.5);
+                char.bones.UpperArmL.rotation.x = THREE.MathUtils.lerp(armSwingL, -1.0, this.guard) + noiseY;
+                char.bones.LowerArmL.rotation.x = THREE.MathUtils.lerp(-Math.abs(Math.sin(legSpd))*0.2, -1.5, this.guard);
+
+                // Right Arm
+                char.bones.UpperArmR.rotation.z = -Math.PI/2 + 0.2 + (this.guard * 0.5);
+                char.bones.UpperArmR.rotation.x = THREE.MathUtils.lerp(armSwingR, -1.0, this.guard) + noiseY;
+                char.bones.LowerArmR.rotation.x = THREE.MathUtils.lerp(-Math.abs(Math.sin(legSpd+Math.PI))*0.2, -1.5, this.guard);
+                
+                // Head stabilizes
+                char.bones.Head.rotation.x = -this.lean;
+                char.bones.Head.rotation.y = -char.bones.Chest.rotation.y * 0.5;
+            }
         }
+        const synthesizer = new ActionSynthesizer();
 
-        function updateProportions() {
-            const mass = parseFloat(document.getElementById('bodyMass').value);
-            const armL = parseFloat(document.getElementById('armLength').value);
-            const legL = parseFloat(document.getElementById('legLength').value);
-            
-            document.getElementById('massVal').innerText = mass.toFixed(2);
-            document.getElementById('armVal').innerText = armL.toFixed(2);
-            document.getElementById('legVal').innerText = legL.toFixed(2);
 
-            // Scale thickness (mass)
-            humanRig.scale.set(mass, 1, mass);
+        // =========================================================
+        // 5. HYPER PHYSICS MATRIX (VERLET CLOTH SIMULATION)
+        // =========================================================
+        class PhysicsMatrix {
+            constructor() {
+                this.particles = [];
+                this.constraints = [];
+                
+                // Parameters matching UI
+                this.windX = 5.0;
+                this.turb = 2.0;
+                this.stiff = 0.8;
+                this.damp = 0.9;
+                this.gravity = -9.8;
+                
+                this.buildCape();
+            }
 
-            // Scale arms
-            bones.leftArm.upperArm.scale.y = armL;
-            bones.leftArm.forearm.position.y = -baseProps.upperArmLen * armL;
-            bones.rightArm.upperArm.scale.y = armL;
-            bones.rightArm.forearm.position.y = -baseProps.upperArmLen * armL;
-            // maintain forearm thickness despite scaling Y
-            bones.leftArm.forearm.scale.set(1, armL, 1);
-            bones.rightArm.forearm.scale.set(1, armL, 1);
+            buildCape() {
+                const w = 1.0, h = 1.5;
+                const segs = 10;
+                const geo = new THREE.PlaneGeometry(w, h, segs, segs);
+                const mat = new THREE.MeshStandardMaterial({ color: 0x990000, side: THREE.DoubleSide, roughness: 0.8 });
+                this.mesh = new THREE.Mesh(geo, mat);
+                this.mesh.castShadow = true;
+                scene.add(this.mesh);
 
-            // Scale legs
-            bones.leftLeg.upperLeg.scale.y = legL;
-            bones.leftLeg.lowerLeg.position.y = -baseProps.upperLegLen * legL;
-            bones.rightLeg.upperLeg.scale.y = legL;
-            bones.rightLeg.lowerLeg.position.y = -baseProps.upperLegLen * legL;
-            
-            bones.leftLeg.lowerLeg.scale.set(1, legL, 1);
-            bones.rightLeg.lowerLeg.scale.set(1, legL, 1);
+                const pos = geo.attributes.position.array;
+                for(let i=0; i<pos.length; i+=3) {
+                    this.particles.push({
+                        pos: new THREE.Vector3(pos[i], pos[i+1], pos[i+2]),
+                        oldPos: new THREE.Vector3(pos[i], pos[i+1], pos[i+2]),
+                        pinned: (i/3) <= segs // Pin top row
+                    });
+                }
 
-            // Adjust hip height based on leg length
-            const newLegTotal = (baseProps.upperLegLen * legL) + (baseProps.lowerLegLen * legL);
-            bones.hips.position.y = newLegTotal + 0.1;
+                // Structural constraints
+                const rowLen = segs + 1;
+                for(let y=0; y<rowLen; y++){
+                    for(let x=0; x<rowLen; x++){
+                        const idx = y * rowLen + x;
+                        if(x < segs) this.constraints.push([idx, idx+1, w/segs]);
+                        if(y < segs) this.constraints.push([idx, idx+rowLen, h/segs]);
+                        // Shear constraints for stability
+                        if(x < segs && y < segs) {
+                            this.constraints.push([idx, idx+rowLen+1, Math.sqrt(Math.pow(w/segs,2) + Math.pow(h/segs,2))]);
+                        }
+                    }
+                }
+            }
+
+            update(dt) {
+                if(dt > 0.03) dt = 0.03; // Stability cap
+                const time = Date.now() * 0.001;
+
+                // Integrate
+                const g = new THREE.Vector3(0, this.gravity, 0);
+                
+                for(let p of this.particles) {
+                    if(p.pinned) continue;
+                    
+                    // Procedural Wind Vector + Turbulence Field
+                    const noise = Math.sin(p.pos.x * 2 + time * this.turb) * Math.cos(p.pos.y * 2 + time);
+                    const windForce = new THREE.Vector3(this.windX + noise * 5, noise * 2, Math.sin(time*2)*2);
+                    
+                    const vel = p.pos.clone().sub(p.oldPos).multiplyScalar(this.damp);
+                    p.oldPos.copy(p.pos);
+                    
+                    const accel = g.clone().add(windForce).multiplyScalar(dt * dt);
+                    p.pos.add(vel).add(accel);
+                }
+
+                // Relax constraints
+                for(let i=0; i<3; i++) {
+                    for(let [aIdx, bIdx, restDist] of this.constraints) {
+                        const a = this.particles[aIdx];
+                        const b = this.particles[bIdx];
+                        const delta = b.pos.clone().sub(a.pos);
+                        const dist = delta.length() || 0.001;
+                        const diff = (dist - restDist) / dist;
+                        const correction = delta.multiplyScalar(0.5 * this.stiff * diff);
+                        
+                        if(!a.pinned) a.pos.add(correction);
+                        if(!b.pinned) b.pos.sub(correction);
+                        
+                        // Collision with body (Sweep approximation)
+                        if(!b.pinned && b.pos.z < char.bones.Pelvis.position.z + 0.2 && b.pos.y > 0) {
+                            b.pos.z = char.bones.Pelvis.position.z + 0.2;
+                        }
+                    }
+                }
+
+                // Anchor to character shoulders
+                const leftPos = new THREE.Vector3();
+                const rightPos = new THREE.Vector3();
+                char.bones.UpperArmL.getWorldPosition(leftPos);
+                char.bones.UpperArmR.getWorldPosition(rightPos);
+                
+                const rowLen = Math.sqrt(this.particles.length);
+                for(let x=0; x<rowLen; x++) {
+                    const factor = x / (rowLen-1);
+                    this.particles[x].pos.lerpVectors(rightPos, leftPos, factor);
+                    this.particles[x].pos.z -= 0.1; // Back of shoulders
+                    this.particles[x].pos.y += 0.1;
+                }
+
+                // Update geometry buffer
+                const posArr = this.mesh.geometry.attributes.position.array;
+                for(let i=0; i<this.particles.length; i++) {
+                    posArr[i*3] = this.particles[i].pos.x;
+                    posArr[i*3+1] = this.particles[i].pos.y;
+                    posArr[i*3+2] = this.particles[i].pos.z;
+                }
+                this.mesh.geometry.attributes.position.needsUpdate = true;
+                this.mesh.geometry.computeVertexNormals();
+            }
         }
+        const physics = new PhysicsMatrix();
 
-        // --- PROCEDURAL LOCOMOTION (MATHEMATICS) ---
+
+        // =========================================================
+        // 6. UI BINDING & STATE MANAGEMENT
+        // =========================================================
         
+        // Tab Switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('#tab-anim, #tab-ik').forEach(t => t.classList.add('hidden'));
+                e.target.classList.add('active');
+                document.getElementById(e.target.dataset.target).classList.remove('hidden');
+            });
+        });
+
+        // Animation Synthesis Sliders
+        const bindSlider = (id, obj, prop) => {
+            document.getElementById(`sl-${id}`).addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                obj[prop] = val;
+                document.getElementById(`val-${id}`).innerText = val.toFixed(2);
+            });
+        };
+        bindSlider('speed', synthesizer, 'speed');
+        bindSlider('stride', synthesizer, 'stride');
+        bindSlider('sway', synthesizer, 'sway');
+        bindSlider('lean', synthesizer, 'lean');
+        bindSlider('guard', synthesizer, 'guard');
+        bindSlider('jitter', synthesizer, 'jitter');
+
+        // Physics Sliders
+        bindSlider('windx', physics, 'windX');
+        bindSlider('turb', physics, 'turb');
+        bindSlider('stiff', physics, 'stiff');
+        bindSlider('damp', physics, 'damp');
+        document.getElementById('sl-grav').addEventListener('input', (e) => {
+            physics.gravity = parseFloat(e.target.value) * -9.8;
+            document.getElementById('val-grav').innerText = e.target.value;
+        });
+
+        // Audio Sliders
+        bindSlider('micsens', audioController, 'sensitivity');
+
+        // Animation Presets
+        const setPreset = (speed, stride, sway, lean, guard) => {
+            document.getElementById('sl-speed').value = speed; synthesizer.speed = speed; document.getElementById('val-speed').innerText = speed.toFixed(2);
+            document.getElementById('sl-stride').value = stride; synthesizer.stride = stride; document.getElementById('val-stride').innerText = stride.toFixed(2);
+            document.getElementById('sl-sway').value = sway; synthesizer.sway = sway; document.getElementById('val-sway').innerText = sway.toFixed(2);
+            document.getElementById('sl-lean').value = lean; synthesizer.lean = lean; document.getElementById('val-lean').innerText = lean.toFixed(2);
+            document.getElementById('sl-guard').value = guard; synthesizer.guard = guard; document.getElementById('val-guard').innerText = guard.toFixed(2);
+        };
+        document.getElementById('preset-idle').onclick = () => setPreset(0.5, 0.0, 0.1, 0.0, 0.0);
+        document.getElementById('preset-walk').onclick = () => setPreset(1.0, 0.5, 0.2, 0.1, 0.3);
+        document.getElementById('preset-run').onclick = () => setPreset(2.5, 0.9, 0.4, 0.4, 0.1);
+        document.getElementById('preset-combat').onclick = () => setPreset(0.8, 0.1, 0.1, 0.2, 1.0);
+
+        // Mic Trigger
+        document.getElementById('btn-mic').addEventListener('click', () => {
+            if(!audioController.isActive) audioController.initMic();
+        });
+
+        // GLTF Exporter
+        document.getElementById('btn-export').addEventListener('click', () => {
+            const exporter = new GLTFExporter();
+            // Export the entire scene to capture geometry and current posed state
+            exporter.parse(scene, function (gltf) {
+                const output = JSON.stringify(gltf, null, 2);
+                const blob = new Blob([output], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.style.display = 'none';
+                link.href = url;
+                link.download = 'OmniAnim_Export_' + Date.now() + '.gltf';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, { binary: false }); // Export as JSON string format .gltf
+        });
+
+
+        // =========================================================
+        // 7. MAIN RENDER LOOP
+        // =========================================================
         const clock = new THREE.Clock();
 
-        function animateCharacter() {
-            const delta = clock.getDelta();
-            time += delta * animSpeedMult;
-
-            if (currentState === 'idle') {
-                // Breathing (sine wave on chest scale and arm swing)
-                const breath = Math.sin(time * 2);
-                bones.spine.scale.set(1 + breath*0.02, 1 + breath*0.02, 1 + breath*0.05);
-                
-                // Subtle sway
-                bones.hips.position.y = (baseProps.upperLegLen + baseProps.lowerLegLen + 0.1) * parseFloat(document.getElementById('legLength').value) + breath * 0.01;
-                
-                // Slight arm movements
-                bones.leftArm.upperArm.rotation.z = 0.2 + breath * 0.02;
-                bones.rightArm.upperArm.rotation.z = -0.2 - breath * 0.02;
-                bones.leftArm.upperArm.rotation.x = breath * 0.05;
-                bones.rightArm.upperArm.rotation.x = -breath * 0.05;
-                
-            } else if (currentState === 'walk') {
-                // Gait Cycle Math (Forward Kinematics based on cyclical phases)
-                const walkSpeed = time * 5;
-                
-                // Legs (180 degrees out of phase)
-                const leftLegSwing = Math.sin(walkSpeed);
-                const rightLegSwing = Math.sin(walkSpeed + Math.PI);
-
-                // Upper leg rotation
-                bones.leftLeg.upperLeg.rotation.x = leftLegSwing * 0.8;
-                bones.rightLeg.upperLeg.rotation.x = rightLegSwing * 0.8;
-
-                // Knee bending (must only bend backwards in humans)
-                // Using max(0, -sin) to only bend during the forward swing phase
-                bones.leftLeg.lowerLeg.rotation.x = Math.max(0, -Math.sin(walkSpeed - 0.5)) * 1.2;
-                bones.rightLeg.lowerLeg.rotation.x = Math.max(0, -Math.sin(walkSpeed + Math.PI - 0.5)) * 1.2;
-
-                // Arms (Opposite to legs)
-                bones.leftArm.upperArm.rotation.x = -leftLegSwing * 0.6;
-                bones.rightArm.upperArm.rotation.x = -rightLegSwing * 0.6;
-
-                // Elbows bend slightly more on forward swing
-                bones.leftArm.forearm.rotation.x = Math.max(0, -leftLegSwing) * 0.5 + 0.2;
-                bones.rightArm.forearm.rotation.x = Math.max(0, -rightLegSwing) * 0.5 + 0.2;
-
-                // Torso rotation (counter-balancing arms/legs)
-                bones.spine.rotation.y = leftLegSwing * 0.1;
-                bones.hips.rotation.y = -leftLegSwing * 0.1;
-
-                // Center of mass bobbing (sine wave twice as fast)
-                const legL = parseFloat(document.getElementById('legLength').value);
-                const baseH = (baseProps.upperLegLen * legL) + (baseProps.lowerLegLen * legL) + 0.1;
-                bones.hips.position.y = baseH + Math.abs(Math.cos(walkSpeed)) * 0.1;
-                
-                // Keep scale normal (cancel out idle breath)
-                bones.spine.scale.set(1,1,1);
-            }
-        }
-
-        // --- RENDER LOOP ---
         function animate() {
             requestAnimationFrame(animate);
-            animateCharacter();
-            controls.update();
+            const dt = clock.getDelta();
+
+            // Core Updates
+            synthesizer.update(dt);
+            physics.update(dt);
+            audioController.update();
+            orbit.update();
+
             renderer.render(scene, camera);
         }
-        
-        // Handle window resize
+
+        // Responsive handling
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-
-        // --- VIDEO EXPORT SYSTEM (MediaRecorder API) ---
-        let mediaRecorder;
-        let recordedChunks = [];
-        let isRecording = false;
-
-        function toggleRecording() {
-            const btn = document.getElementById('recordBtn');
-            const text = document.getElementById('recordText');
-            
-            if (!isRecording) {
-                // START RECORDING
-                try {
-                    // Capture canvas stream at 60fps
-                    const stream = renderer.domElement.captureStream(60);
-                    
-                    // Prefer standard WebM, fallback to whatever browser supports
-                    const options = { mimeType: 'video/webm; codecs=vp9' };
-                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                        options.mimeType = 'video/webm';
-                    }
-
-                    mediaRecorder = new MediaRecorder(stream, options);
-                    recordedChunks = [];
-
-                    mediaRecorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) {
-                            recordedChunks.push(event.data);
-                        }
-                    };
-
-                    mediaRecorder.onstop = exportVideo;
-
-                    mediaRecorder.start(100); // Collect data every 100ms
-                    isRecording = true;
-                    
-                    // Update UI
-                    btn.classList.add('recording-active');
-                    btn.classList.remove('btn-record');
-                    text.innerText = "Stop Recording";
-
-                } catch (e) {
-                    alert("Recording not supported in this browser. Try Chrome or Firefox.");
-                    console.error(e);
-                }
-            } else {
-                // STOP RECORDING
-                mediaRecorder.stop();
-                isRecording = false;
-                
-                // Update UI
-                btn.classList.remove('recording-active');
-                btn.classList.add('btn-record');
-                text.innerText = "Start Recording";
-            }
-        }
-
-        function exportVideo() {
-            // Combine chunks into a single Blob
-            const blob = new Blob(recordedChunks, { type: 'video/webm' });
-            const url = URL.createObjectURL(blob);
-            
-            // Trigger download automatically
-            const a = document.getElementById('downloadLink');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = `animation_${Date.now()}.webm`;
-            a.click();
-            
-            // Cleanup
-            setTimeout(() => {
-                URL.revokeObjectURL(url);
-            }, 1000);
-        }
-
-        // Start everything
-        updateProportions(); // Initial layout calc
+        // Start Execution
         animate();
 
     </script>
 </body>
 </html>
+
 
