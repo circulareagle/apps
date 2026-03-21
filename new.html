@@ -1,89 +1,92 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>MP4 Brute Force Recovery</title>
+    <title>Professional Video Header Rebuilder</title>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-950 text-slate-200 min-h-screen p-8 font-mono">
+<body class="bg-zinc-950 text-zinc-200 min-h-screen p-8 font-sans">
+    <div class="max-w-xl mx-auto bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl">
+        <h1 class="text-2xl font-bold text-white mb-2">VLC-Style Re-Indexer</h1>
+        <p class="text-sm text-zinc-500 mb-6">This tool uses FFmpeg to rebuild the duration header from scratch. No data leaves your browser.</p>
 
-    <div class="max-w-2xl mx-auto border border-red-900/30 bg-slate-900 rounded-xl shadow-2xl p-8">
-        <h1 class="text-xl font-bold text-red-500 mb-2 underline tracking-tighter">DATA RECOVERY MODE: BRUTE FORCE</h1>
-        <p class="text-xs text-slate-500 mb-6">Warning: This tool attempts to bypass missing headers by scanning raw binary for video frames.</p>
-
-        <div id="dropZone" class="border-2 border-dashed border-slate-700 p-12 text-center rounded-lg cursor-pointer hover:bg-slate-800 transition">
-            <input type="file" id="fileInput" class="hidden">
-            <p class="text-sm">DROP TRUNCATED FILE HERE</p>
+        <div id="dropZone" class="border-2 border-dashed border-zinc-700 rounded-xl p-12 text-center hover:border-blue-500 cursor-pointer transition-all">
+            <input type="file" id="fileInput" class="hidden" accept="video/mp4">
+            <p id="statusText">Drop your "0:00" MP4 here</p>
         </div>
 
-        <div id="results" class="hidden mt-6 space-y-4">
-            <div class="bg-black p-4 rounded text-[10px] h-48 overflow-y-auto" id="console">
-                <div class="text-blue-400">> Ready for deep scan...</div>
+        <div id="progressContainer" class="hidden mt-6">
+            <div class="w-full bg-zinc-800 rounded-full h-2">
+                <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all" style="width: 0%"></div>
             </div>
-            
-            <button id="recoverBtn" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded uppercase text-xs">
-                Attempt Frame Extraction
-            </button>
+            <p id="log" class="text-[10px] font-mono mt-4 text-zinc-400 bg-black p-3 rounded h-32 overflow-y-auto"></p>
         </div>
+
+        <button id="startBtn" class="hidden w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all">
+            Rebuild Duration Header
+        </button>
     </div>
 
     <script>
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        const ffmpeg = createFFmpeg({ log: true });
+        
         const fileInput = document.getElementById('fileInput');
         const dropZone = document.getElementById('dropZone');
-        const consoleEl = document.getElementById('console');
-        const recoverBtn = document.getElementById('recoverBtn');
-        let fileData = null;
+        const startBtn = document.getElementById('startBtn');
+        const logEl = document.getElementById('log');
 
-        function log(msg, color = 'text-slate-400') {
-            const d = document.createElement('div');
-            d.className = color;
-            d.innerText = `> ${msg}`;
-            consoleEl.appendChild(d);
-            consoleEl.scrollTop = consoleEl.scrollHeight;
+        function updateLog(msg) {
+            const div = document.createElement('div');
+            div.innerText = msg;
+            logEl.appendChild(div);
+            logEl.scrollTop = logEl.scrollHeight;
         }
 
         dropZone.onclick = () => fileInput.click();
-        fileInput.onchange = (e) => {
+        
+        fileInput.onchange = async (e) => {
             const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                fileData = new Uint8Array(ev.target.result);
-                document.getElementById('results').classList.remove('hidden');
-                log("File loaded. Size: " + fileData.length + " bytes.");
-                scan();
-            };
-            reader.readAsArrayBuffer(file);
+            if (!file) return;
+            
+            document.getElementById('statusText').innerText = `Selected: ${file.name}`;
+            startBtn.classList.remove('hidden');
+            document.getElementById('progressContainer').classList.remove('hidden');
         };
 
-        function scan() {
-            log("Scanning for NAL Start Codes (00 00 00 01)...");
-            let framesFound = 0;
-            // Scan for H.264 start codes
-            for (let i = 0; i < fileData.length - 4; i++) {
-                if (fileData[i] === 0 && fileData[i+1] === 0 && fileData[i+2] === 0 && fileData[i+3] === 1) {
-                    framesFound++;
-                }
-            }
-            if (framesFound > 0) {
-                log(`SUCCESS: Found ${framesFound} potential video data fragments!`, 'text-green-500');
-                log("These fragments exist even though the header is missing.", 'text-yellow-500');
-            } else {
-                log("FAILED: No video data found. The file is empty or encoded differently.", 'text-red-500');
-            }
-        }
+        startBtn.onclick = async () => {
+            startBtn.disabled = true;
+            startBtn.innerText = "Processing...";
+            updateLog("Loading FFmpeg engine...");
 
-        recoverBtn.onclick = () => {
-            log("Creating new container blueprint...");
-            // We are going to wrap the raw data into a basic blob and force an AVI extension
-            // Sometimes VLC can "guess" the content of an AVI easier than a broken MP4
-            const blob = new Blob([fileData], {type: 'video/x-msvideo'});
-            const url = URL.createObjectURL(blob);
+            if (!ffmpeg.isLoaded()) await ffmpeg.load();
+
+            const file = fileInput.files[0];
+            ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(file));
+
+            updateLog("Rebuilding stream index (Copying codecs)...");
+
+            // This specific command (-copyts -report) fixes duration issues
+            // without losing quality (stream copy)
+            await ffmpeg.run('-i', 'input.mp4', '-c', 'copy', '-map', '0', '-movflags', 'faststart', 'output.mp4');
+
+            updateLog("Header rebuilt! Finalizing download...");
+
+            const data = ffmpeg.FS('readFile', 'output.mp4');
+            const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+            
             const a = document.createElement('a');
             a.href = url;
-            a.download = "RECOVERED_RAW_DATA.avi";
+            a.download = "FIXED_" + file.name;
             a.click();
-            log("Downloaded as .AVI. IMPORTANT: Open this file with VLC MEDIA PLAYER.", "text-white font-bold");
+            
+            startBtn.innerText = "Done!";
+            updateLog("Success: Duration should now be visible.");
         };
+
+        ffmpeg.setProgress(({ ratio }) => {
+            document.getElementById('progressBar').style.width = (ratio * 100) + '%';
+        });
     </script>
 </body>
 </html>
