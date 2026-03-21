@@ -7,109 +7,299 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --bg: #09090b; --panel: rgba(24, 24, 27, 0.85); --accent: #8b5cf6; --accent-hover: #7c3aed; --text: #f4f4f5; }
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; user-select: none; }
-        canvas { display: block; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        :root { 
+            --bg: #09090b; 
+            --panel: rgba(24, 24, 27, 0.92); 
+            --accent: #8b5cf6; 
+            --accent-hover: #7c3aed; 
+            --text: #f4f4f5; 
+            --text-muted: #a1a1aa;
+        }
         
-        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; justify-content: space-between; padding: 24px; box-sizing: border-box; }
-        .panel { pointer-events: auto; background: var(--panel); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-        .left-panel { width: 340px; max-height: calc(100vh - 48px); overflow-y: auto; }
-        .right-panel { width: 300px; max-height: calc(100vh - 48px); }
+        body { 
+            margin: 0; 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            overflow: hidden; 
+            user-select: none; 
+        }
+        
+        canvas { 
+            display: block; 
+            width: 100vw; 
+            height: 100vh; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            z-index: 1; 
+        }
+        
+        .ui-layer { 
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            z-index: 10; 
+            pointer-events: none; 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 24px; 
+            box-sizing: border-box;
+            gap: 24px;
+        }
+        
+        .panel { 
+            pointer-events: auto; 
+            background: var(--panel); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255,255,255,0.08); 
+            border-radius: 20px; 
+            padding: 24px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .panel:hover { transform: translateY(-2px); }
+        
+        .left-panel { width: 360px; max-height: calc(100vh - 48px); overflow-y: auto; }
+        .right-panel { width: 310px; max-height: calc(100vh - 48px); }
         
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 10px; }
 
-        h1 { font-size: 1.25rem; font-weight: 700; margin: 0; letter-spacing: -0.025em; }
-        h2 { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #a1a1aa; margin: 0 0 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; }
+        h1 { 
+            font-size: 1.35rem; 
+            font-weight: 700; 
+            letter-spacing: -0.04em; 
+            margin: 0; 
+        }
+        .subtitle { font-size: 0.8rem; color: #71717a; margin-top: 4px; }
         
-        .control-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .control-label { font-size: 0.8rem; color: #d4d4d8; }
-        .control-val { font-size: 0.75rem; color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+        h2 { 
+            font-size: 0.7rem; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 0.125em; 
+            color: #71717a; 
+            margin: 0 0 10px 0; 
+            padding-bottom: 6px; 
+            border-bottom: 1px solid rgba(255,255,255,0.08); 
+        }
         
-        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; margin: 4px 0 12px 0; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 10px rgba(139, 92, 246, 0.5); }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; cursor: pointer; }
+        .control-row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 8px; 
+        }
+        .control-label { 
+            font-size: 0.825rem; 
+            color: #d4d4d8; 
+            font-weight: 500; 
+        }
+        .control-val { 
+            font-size: 0.8rem; 
+            color: var(--accent); 
+            font-weight: 700; 
+            font-variant-numeric: tabular-nums; 
+            min-width: 42px; 
+            text-align: right; 
+        }
         
-        input[type=color] { -webkit-appearance: none; border: none; width: 100%; height: 32px; border-radius: 8px; cursor: pointer; background: transparent; padding: 0; margin-bottom: 12px; }
+        input[type=range] { 
+            -webkit-appearance: none; 
+            width: 100%; 
+            background: transparent; 
+            margin: 6px 0 14px 0; 
+        }
+        input[type=range]::-webkit-slider-thumb { 
+            -webkit-appearance: none; 
+            height: 18px; 
+            width: 18px; 
+            border-radius: 50%; 
+            background: var(--accent); 
+            cursor: pointer; 
+            border: 3px solid #fff; 
+            box-shadow: 0 0 14px rgba(139, 92, 246, 0.6); 
+            transition: all 0.1s;
+        }
+        input[type=range]::-webkit-slider-runnable-track { 
+            width: 100%; 
+            height: 5px; 
+            background: rgba(255,255,255,0.12); 
+            border-radius: 9999px; 
+            cursor: pointer; 
+        }
+        
+        input[type=color] { 
+            -webkit-appearance: none; 
+            border: none; 
+            width: 100%; 
+            height: 38px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            background: transparent; 
+            padding: 0; 
+            margin-bottom: 8px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
         input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
-        input[type=color]::-webkit-color-swatch { border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; }
+        input[type=color]::-webkit-color-swatch { border: 2px solid rgba(255,255,255,0.15); border-radius: 10px; }
 
-        button { background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        button:hover { background: rgba(255,255,255,0.1); }
-        button.active { background: var(--accent); border-color: var(--accent-hover); box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
+        button { 
+            background: rgba(255,255,255,0.06); 
+            color: white; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            padding: 12px 18px; 
+            border-radius: 12px; 
+            font-size: 0.875rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 10px; 
+        }
+        button:hover { background: rgba(255,255,255,0.12); transform: translateY(-1px); }
+        button.active { 
+            background: var(--accent); 
+            border-color: var(--accent-hover); 
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5); 
+        }
         
-        #btn-record { background: #e11d48; border-color: #be123c; color: white; margin-top: auto; }
+        #btn-record { 
+            background: #e11d48; 
+            border-color: #be123c; 
+            color: white; 
+            font-size: 0.95rem; 
+            padding: 14px 20px; 
+        }
         #btn-record:hover { background: #be123c; }
-        #btn-record.recording { animation: pulse-record 2s infinite; background: transparent; border: 2px solid #e11d48; color: #e11d48; }
+        #btn-record.recording { 
+            animation: pulse-record 1.8s infinite; 
+            background: transparent; 
+            border: 3px solid #e11d48; 
+            color: #e11d48; 
+        }
         
-        @keyframes pulse-record { 0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(225, 29, 72, 0); } 100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); } }
+        @keyframes pulse-record { 
+            0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7); } 
+            70% { box-shadow: 0 0 0 12px rgba(225, 29, 72, 0); } 
+            100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); } 
+        }
 
-        .time-display { font-family: monospace; font-size: 1.2rem; text-align: center; color: #e11d48; display: none; margin-top: 8px; font-weight: bold; }
+        .time-display { 
+            font-family: "SF Mono", monospace; 
+            font-size: 1.35rem; 
+            text-align: center; 
+            color: #e11d48; 
+            font-weight: 700; 
+            letter-spacing: 2px; 
+            display: none; 
+            margin-top: 8px; 
+        }
         .time-display.visible { display: block; }
+
+        .reset-btn {
+            margin-top: auto;
+            background: rgba(255,255,255,0.05);
+            font-size: 0.8rem;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+            margin: 8px 0;
+        }
     </style>
 </head>
 <body>
 
+    <!-- Top Bar -->
+    <div class="absolute top-6 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none">
+        <div class="bg-zinc-900/70 backdrop-blur-xl text-xs font-mono tracking-[2px] px-6 py-2 rounded-3xl border border-white/10 text-white/70 flex items-center gap-3">
+            <div class="w-2 h-2 bg-violet-500 rounded-full animate-pulse"></div>
+            PROCEDURAL ANIMATION STUDIO PRO
+        </div>
+    </div>
+
     <div class="ui-layer">
-        <!-- Anatomy & Configuration -->
+        <!-- LEFT PANEL: ANATOMY & CONFIG -->
         <div class="panel left-panel">
             <div>
                 <h1>Anim Studio Pro</h1>
-                <p class="text-xs text-zinc-400 mt-1 mb-4">Organic Capsule Rig & Deterministic IK</p>
+                <p class="subtitle">Organic Capsule Rig • Verlet Cloak • Real-time IK</p>
             </div>
 
             <div>
                 <h2>Morphology & Scale</h2>
-                <div class="control-row"><span class="control-label">Muscular Hypertrophy</span><span class="control-val" id="val-muscle">1.0</span></div>
-                <input type="range" id="param-muscle" min="0.7" max="1.5" step="0.01" value="1">
+                <div class="control-row"><span class="control-label">Muscular Hypertrophy</span><span class="control-val" id="val-muscle">1.00</span></div>
+                <input type="range" id="param-muscle" min="0.7" max="1.5" step="0.01" value="1.0">
 
-                <div class="control-row"><span class="control-label">Femur / Leg Length</span><span class="control-val" id="val-legs">1.0</span></div>
-                <input type="range" id="param-legs" min="0.7" max="1.5" step="0.01" value="1">
+                <div class="control-row"><span class="control-label">Femur / Leg Length</span><span class="control-val" id="val-legs">1.00</span></div>
+                <input type="range" id="param-legs" min="0.7" max="1.5" step="0.01" value="1.0">
 
-                <div class="control-row"><span class="control-label">Global Character Scale</span><span class="control-val" id="val-scale">1.0</span></div>
-                <input type="range" id="param-scale" min="0.5" max="1.5" step="0.01" value="1">
+                <div class="control-row"><span class="control-label">Global Character Scale</span><span class="control-val" id="val-scale">1.00</span></div>
+                <input type="range" id="param-scale" min="0.5" max="1.5" step="0.01" value="1.0">
             </div>
+
+            <div class="section-divider"></div>
 
             <div>
                 <h2>Material Pigmentation</h2>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-6">
                     <div>
-                        <span class="control-label block mb-1">Epidermis (Skin)</span>
+                        <span class="control-label block mb-1.5">Epidermis (Skin)</span>
                         <input type="color" id="param-skin" value="#e8b49b">
                     </div>
                     <div>
-                        <span class="control-label block mb-1">Verlet Cloak</span>
+                        <span class="control-label block mb-1.5">Verlet Cloak</span>
                         <input type="color" id="param-cloak" value="#8b5cf6">
                     </div>
                 </div>
             </div>
 
+            <div class="section-divider"></div>
+
             <div>
                 <h2>Facial Animation Engine</h2>
-                <button id="btn-audio" class="w-full">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-                    Enable Mic (FFT Visemes)
+                <button id="btn-audio" class="w-full justify-start">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                        <line x1="12" y1="19" x2="12" y2="22"/>
+                    </svg>
+                    <span id="audio-label">Enable Mic (Real-time Visemes)</span>
                 </button>
-                <p class="text-[10px] text-zinc-500 mt-2 leading-tight">Parses audio frequencies in real-time to drive the vertical translation of the procedural jaw mesh.</p>
+                <p class="text-[10px] text-zinc-500 mt-3 leading-tight">FFT analysis drives jaw rotation + procedural blinking for natural lip-sync.</p>
             </div>
+
+            <button onclick="resetAllParameters()" class="reset-btn w-full">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M3 12a9 9 0 1 1 9 9 9 9 0 0 1-9-9z"/><path d="M12 8v4l3 3"/></svg>
+                RESET TO DEFAULT
+            </button>
         </div>
 
-        <!-- Timeline & Export -->
-        <div class="panel right-panel">
+        <!-- RIGHT PANEL: TIMELINE & EXPORT -->
+        <div class="panel right-panel flex flex-col">
             <div>
                 <h2>Procedural Timeline</h2>
                 <div class="flex flex-col gap-2">
                     <button id="mode-idle" class="active" onclick="setMode('idle')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-                        Idle / Breathe
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                        Idle / Breathe Cycle
                     </button>
                     <button id="mode-walk" onclick="setMode('walk')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-4.24 4.24a1 1 0 1 0 3 3l3-3"/><path d="m14 14-3.35-3.35"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-4.24 4.24a1 1 0 1 0 3 3l3-3"/><path d="m14 14-3.35-3.35"/></svg>
                         Continuous Gait Cycle
                     </button>
                     <button id="mode-run" onclick="setMode('run')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v-2.38C4 11.5 7.14 9 11 9h2"/><path d="M17 9v8"/><path d="M21 13h-8"/><path d="M11 9V5c0-1.66-1.34-3-3-3S5 3.34 5 5v2"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M4 16v-2.38C4 11.5 7.14 9 11 9h2"/><path d="M17 9v8"/><path d="M21 13h-8"/><path d="M11 9V5c0-1.66-1.34-3-3-3S5 3.34 5 5v2"/></svg>
                         Sprint Kinematics
                     </button>
                 </div>
@@ -118,27 +308,24 @@
             <div class="mt-auto flex flex-col">
                 <h2>Continuous Export Engine</h2>
                 <button id="btn-record" onclick="toggleRecording()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                    <svg id="record-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
                     <span id="record-text">START RECORDING</span>
                 </button>
                 <div id="record-timer" class="time-display">00:00</div>
-                <p class="text-[10px] text-zinc-500 mt-2 text-center">Captures buffer to High-Bitrate WebM.</p>
+                <p class="text-[10px] text-zinc-500 mt-3 text-center leading-tight">60 FPS • 10 Mbps VP9 WebM • Canvas capture only</p>
             </div>
         </div>
     </div>
 
     <script>
-        // --- Core Architecture & State ---
+        // === CORE STATE ===
         let scene, camera, renderer, clock;
-        let character = { root: null, rig: {}, parameters: { muscle: 1.0, legs: 1.0 } };
-        let physics = { particles: [], constraints: [] };
+        let character = { root: null, rig: {}, parameters: { muscle: 1.0, legs: 1.0, scale: 1.0 }, skinMeshes: [] };
+        let physics = { particles: [], constraints: [], mesh: null };
         let audio = { ctx: null, analyser: null, data: null, active: false };
         let state = { mode: 'idle', time: 0 };
-        
-        // Recording State
         let recorder = { instance: null, chunks: [], active: false, startTime: 0, interval: null };
 
-        // Colors
         const palette = {
             skin: new THREE.Color(0xe8b49b),
             shorts: new THREE.Color(0x18181b),
@@ -147,248 +334,202 @@
             pupil: new THREE.Color(0x09090b)
         };
 
-        // --- Initialization ---
-        function init() {
-            // Scene setup
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x09090b);
-            scene.fog = new THREE.FogExp2(0x09090b, 0.08);
-
-            // Camera setup
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-            camera.position.set(3, 1.8, 4.5);
-            camera.lookAt(0, 1.1, 0);
-
-            // Renderer setup (High Quality)
-            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.1;
-            document.body.appendChild(renderer.domElement);
-
-            clock = new THREE.Clock();
-
-            // Lighting (Cinematic Studio Setup)
-            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4);
-            hemiLight.position.set(0, 10, 0);
-            scene.add(hemiLight);
-
-            const keyLight = new THREE.SpotLight(0xffffff, 1.5);
-            keyLight.position.set(4, 6, 4);
-            keyLight.angle = Math.PI / 6;
-            keyLight.penumbra = 0.5;
-            keyLight.castShadow = true;
-            keyLight.shadow.mapSize.width = 2048;
-            keyLight.shadow.mapSize.height = 2048;
-            scene.add(keyLight);
-
-            const rimLight = new THREE.PointLight(0x8b5cf6, 2, 10);
-            rimLight.position.set(-3, 3, -4);
-            scene.add(rimLight);
-
-            // Environment
-            const grid = new THREE.GridHelper(30, 60, 0x27272a, 0x18181b);
-            grid.position.y = -0.01;
-            scene.add(grid);
-
-            const floor = new THREE.Mesh(
-                new THREE.PlaneGeometry(30, 30),
-                new THREE.MeshStandardMaterial({ color: 0x09090b, depthWrite: false, roughness: 1 })
-            );
-            floor.rotation.x = -Math.PI / 2;
-            floor.receiveShadow = true;
-            scene.add(floor);
-
-            buildOrganicHuman();
-            initVerletCloak();
-            setupInteractions();
-            
-            animate();
-        }
-
-        // --- Organic Skinning & Rigging Pipeline ---
-        // Generates seamlessly overlapping capsule joints
-        function createBone(radius, length, mat, pivotOffset) {
-            // Total height of capsule is length + 2*radius
-            const geo = new THREE.CapsuleGeometry(radius, length, 4, 16);
+        // === BONE FACTORY (CORRECT PIVOT - TOP ATTACHMENT) ===
+        function createBone(radius, length, mat) {
+            const geo = new THREE.CapsuleGeometry(radius, length, 8, 28);
             const mesh = new THREE.Mesh(geo, mat);
             mesh.castShadow = true;
             mesh.receiveShadow = true;
-            
+
+            // Top of capsule at group origin (0,0,0) → perfect for skeletal hierarchy
+            const halfHeight = radius + length / 2;
+            mesh.position.y = -halfHeight;
+
             const group = new THREE.Group();
-            // Offset the mesh so the group's origin becomes the joint pivot
-            mesh.position.copy(pivotOffset);
             group.add(mesh);
-            return { group, mesh };
+            return { group, mesh, length: length, radius: radius };
         }
 
+        // === BUILD CHARACTER (FULLY FIXED RIG) ===
         function buildOrganicHuman() {
-            const matSkin = new THREE.MeshStandardMaterial({ color: palette.skin, roughness: 0.4, metalness: 0.1 });
-            const matShorts = new THREE.MeshStandardMaterial({ color: palette.shorts, roughness: 0.8 });
+            const matSkin = new THREE.MeshStandardMaterial({ color: palette.skin, roughness: 0.35, metalness: 0.12 });
+            const matShorts = new THREE.MeshStandardMaterial({ color: palette.shorts, roughness: 0.85 });
 
             character.root = new THREE.Group();
             scene.add(character.root);
 
-            // --- CORE / SPINE ---
-            // Pelvis
-            const pelvisRadius = 0.16;
-            character.rig.pelvis = createBone(pelvisRadius, 0.1, matShorts, new THREE.Vector3(0, 0, 0));
-            character.rig.pelvis.group.position.y = 1.05; // Base hip height
-            character.rig.pelvis.mesh.rotation.z = Math.PI / 2; // Horizontal capsule
-            character.root.add(character.rig.pelvis.group);
+            // PELVIS (horizontal)
+            const pelvis = createBone(0.165, 0.24, matShorts);
+            pelvis.mesh.rotation.z = Math.PI / 2;
+            pelvis.group.position.y = 1.02;
+            character.root.add(pelvis.group);
+            character.rig.pelvis = pelvis;
 
-            // Abdomen
-            character.rig.abdomen = createBone(0.14, 0.15, matSkin, new THREE.Vector3(0, 0.15, 0));
-            character.rig.abdomen.group.position.y = 0.05;
-            character.rig.pelvis.group.add(character.rig.abdomen.group);
+            // ABDOMEN
+            const abdomen = createBone(0.145, 0.26, matSkin);
+            abdomen.group.position.y = 0.19;
+            pelvis.group.add(abdomen.group);
+            character.rig.abdomen = abdomen;
+            character.skinMeshes.push(abdomen.mesh);
 
-            // Chest
-            character.rig.chest = createBone(0.18, 0.2, matSkin, new THREE.Vector3(0, 0.2, 0));
-            character.rig.chest.group.position.y = 0.28;
-            character.rig.abdomen.group.add(character.rig.chest.group);
+            // CHEST
+            const chest = createBone(0.185, 0.29, matSkin);
+            chest.group.position.y = 0.31;
+            abdomen.group.add(chest.group);
+            character.rig.chest = chest;
+            character.skinMeshes.push(chest.mesh);
 
-            // Neck & Head
-            character.rig.neck = createBone(0.05, 0.08, matSkin, new THREE.Vector3(0, 0.09, 0));
-            character.rig.neck.group.position.y = 0.35;
-            character.rig.chest.group.add(character.rig.neck.group);
+            // NECK
+            const neck = createBone(0.058, 0.11, matSkin);
+            neck.group.position.y = 0.34;
+            chest.group.add(neck.group);
+            character.rig.neck = neck;
+            character.skinMeshes.push(neck.mesh);
 
-            character.rig.headGroup = new THREE.Group();
-            character.rig.headGroup.position.y = 0.15;
-            character.rig.neck.group.add(character.rig.headGroup);
+            // HEAD GROUP
+            const headGroup = new THREE.Group();
+            headGroup.position.y = 0.13;
+            neck.group.add(headGroup);
+            character.rig.headGroup = headGroup;
 
-            // Cranium (Squashed Sphere for organic head shape)
-            const headGeo = new THREE.SphereGeometry(0.12, 32, 32);
-            headGeo.scale(1, 1.2, 1.1);
+            // CRANIUM
+            const headGeo = new THREE.SphereGeometry(0.135, 48, 48);
+            headGeo.scale(1.05, 1.18, 1.08);
             const headMesh = new THREE.Mesh(headGeo, matSkin);
-            headMesh.position.y = 0.1;
+            headMesh.position.y = 0.09;
             headMesh.castShadow = true;
-            character.rig.headGroup.add(headMesh);
+            headGroup.add(headMesh);
             character.rig.headMesh = headMesh;
+            character.skinMeshes.push(headMesh);
 
-            // Facial Features (Procedural Jaw)
-            const jawGeo = new THREE.CapsuleGeometry(0.04, 0.05, 4, 16);
-            jawGeo.scale(1.2, 1, 1);
-            character.rig.jaw = new THREE.Mesh(jawGeo, matSkin);
-            character.rig.jaw.position.set(0, -0.02, 0.08);
-            character.rig.jaw.rotation.z = Math.PI / 2;
-            character.rig.headGroup.add(character.rig.jaw);
+            // JAW (ready for rotation viseme)
+            const jawGeo = new THREE.CapsuleGeometry(0.057, 0.065, 5, 20);
+            jawGeo.scale(1.35, 0.75, 1.1);
+            const jaw = new THREE.Mesh(jawGeo, matSkin);
+            jaw.position.set(0, -0.015, 0.095);
+            jaw.rotation.z = Math.PI / 2;
+            jaw.rotation.x = 0.08; // slight natural open
+            headGroup.add(jaw);
+            character.rig.jaw = jaw;
+            character.skinMeshes.push(jaw);
 
-            // Eyes
-            const eyeGeo = new THREE.SphereGeometry(0.02, 16, 16);
+            // EYES
+            const eyeGeo = new THREE.SphereGeometry(0.022, 24, 24);
             const eyeMat = new THREE.MeshStandardMaterial({ color: palette.eye, roughness: 0.1 });
-            const pupilGeo = new THREE.SphereGeometry(0.01, 16, 16);
+            const pupilGeo = new THREE.SphereGeometry(0.011, 18, 18);
             const pupilMat = new THREE.MeshBasicMaterial({ color: palette.pupil });
 
             const createEye = (x) => {
                 const eye = new THREE.Mesh(eyeGeo, eyeMat);
-                eye.position.set(x, 0.12, 0.11);
+                eye.position.set(x, 0.125, 0.115);
                 const pupil = new THREE.Mesh(pupilGeo, pupilMat);
-                pupil.position.set(0, 0, 0.015);
+                pupil.position.z = 0.018;
                 eye.add(pupil);
-                character.rig.headGroup.add(eye);
+                headGroup.add(eye);
+                character.skinMeshes.push(eye); // eyes are white but we exclude later if needed
                 return eye;
             };
-            character.rig.lEye = createEye(-0.04);
-            character.rig.rEye = createEye(0.04);
+            character.rig.lEye = createEye(-0.045);
+            character.rig.rEye = createEye(0.045);
 
-            // --- LIMBS FABRICATION ---
-            // Helper to generate arms and legs with correct pivoting
+            // ARMS
             const buildArm = (isLeft) => {
                 const sign = isLeft ? -1 : 1;
-                const armGroup = new THREE.Group();
-                armGroup.position.set(sign * 0.22, 0.3, 0); // Shoulder anchor
-                character.rig.chest.group.add(armGroup);
+                const shoulder = new THREE.Group();
+                shoulder.position.set(sign * 0.195, 0.29, 0);
+                chest.group.add(shoulder);
 
-                // Upper Arm (Pivot at top: y = -radius - length/2)
-                const uArm = createBone(0.06, 0.22, matSkin, new THREE.Vector3(0, -0.17, 0));
-                armGroup.add(uArm.group);
+                // Upper arm
+                const upper = createBone(0.058, 0.295, matSkin);
+                shoulder.add(upper.group);
 
-                // Lower Arm (Pivot at top)
-                const lArm = createBone(0.05, 0.22, matSkin, new THREE.Vector3(0, -0.16, 0));
-                lArm.group.position.y = -0.34; // Elbow joint position
-                uArm.group.add(lArm.group);
+                // Lower arm
+                const lower = createBone(0.047, 0.265, matSkin);
+                lower.group.position.y = -(0.295 + 2 * 0.058);
+                upper.group.add(lower.group);
 
                 // Hand
-                const handGeo = new THREE.SphereGeometry(0.06, 16, 16);
-                handGeo.scale(1, 1.2, 0.5);
+                const handGeo = new THREE.SphereGeometry(0.052, 20, 20);
+                handGeo.scale(1.15, 0.95, 0.65);
                 const hand = new THREE.Mesh(handGeo, matSkin);
-                hand.position.y = -0.3;
-                lArm.group.add(hand);
+                hand.position.y = -(0.265 + 2 * 0.047) + 0.01;
+                lower.group.add(hand);
+                character.skinMeshes.push(hand);
 
-                return { root: armGroup, upper: uArm, lower: lArm };
-            };
-
-            const buildLeg = (isLeft) => {
-                const sign = isLeft ? -1 : 1;
-                const legGroup = new THREE.Group();
-                legGroup.position.set(sign * 0.12, 0, 0); // Hip socket
-                character.rig.pelvis.group.add(legGroup);
-
-                // Thigh
-                const thigh = createBone(0.08, 0.35, matSkin, new THREE.Vector3(0, -0.25, 0));
-                legGroup.add(thigh.group);
-
-                // Calf
-                const calf = createBone(0.06, 0.35, matSkin, new THREE.Vector3(0, -0.23, 0));
-                calf.group.position.y = -0.5; // Knee joint
-                thigh.group.add(calf.group);
-
-                // Foot
-                const footGeo = new THREE.CapsuleGeometry(0.05, 0.15, 4, 16);
-                const foot = new THREE.Mesh(footGeo, matSkin);
-                foot.rotation.x = Math.PI / 2;
-                foot.position.set(0, -0.48, 0.05);
-                calf.group.add(foot);
-
-                return { root: legGroup, upper: thigh, lower: calf, foot: foot };
+                return { root: shoulder, upper: upper, lower: lower };
             };
 
             character.rig.lArm = buildArm(true);
             character.rig.rArm = buildArm(false);
+
+            // LEGS
+            const buildLeg = (isLeft) => {
+                const sign = isLeft ? -1 : 1;
+                const hip = new THREE.Group();
+                hip.position.set(sign * 0.115, 0, 0);
+                pelvis.group.add(hip);
+
+                // Thigh
+                const thigh = createBone(0.078, 0.39, matSkin);
+                hip.add(thigh.group);
+
+                // Calf
+                const calf = createBone(0.057, 0.37, matSkin);
+                calf.group.position.y = -(0.39 + 2 * 0.078);
+                thigh.group.add(calf.group);
+
+                // Foot
+                const footGeo = new THREE.CapsuleGeometry(0.048, 0.19, 5, 18);
+                const foot = new THREE.Mesh(footGeo, matSkin);
+                foot.rotation.x = Math.PI / 2;
+                foot.position.set(0, -(0.37 + 2 * 0.057) + 0.04, 0.085);
+                calf.group.add(foot);
+
+                return { root: hip, upper: thigh, lower: calf, foot: foot };
+            };
+
             character.rig.lLeg = buildLeg(true);
             character.rig.rLeg = buildLeg(false);
+
+            // Store all skin meshes for easy recoloring
+            character.skinMeshes = character.skinMeshes.filter(m => m !== character.rig.lEye && m !== character.rig.rEye);
         }
 
-        // --- Physics Engine: Verlet Integration Cloak ---
+        // === VERLET CLOAK (STABILIZED) ===
         function initVerletCloak() {
-            const segmentsY = 8;
-            const segmentsX = 5;
-            const restDistY = 0.15;
-            const restDistX = 0.12;
+            const segmentsY = 9;
+            const segmentsX = 6;
+            const restDistY = 0.145;
+            const restDistX = 0.118;
 
             const mat = new THREE.MeshStandardMaterial({ 
-                color: palette.cloak, side: THREE.DoubleSide, roughness: 0.6, 
-                wireframe: false 
+                color: palette.cloak, 
+                side: THREE.DoubleSide, 
+                roughness: 0.65 
             });
 
-            // Geometry setup (Plane deformed by particles)
             const geo = new THREE.PlaneGeometry(restDistX * (segmentsX-1), restDistY * (segmentsY-1), segmentsX-1, segmentsY-1);
             physics.mesh = new THREE.Mesh(geo, mat);
             physics.mesh.castShadow = true;
             scene.add(physics.mesh);
 
-            // Particle Setup
+            physics.particles = [];
             for (let y = 0; y < segmentsY; y++) {
                 for (let x = 0; x < segmentsX; x++) {
                     physics.particles.push({
-                        pos: new THREE.Vector3((x - segmentsX/2) * restDistX, 1.5 - y * restDistY, -0.2),
-                        oldPos: new THREE.Vector3((x - segmentsX/2) * restDistX, 1.5 - y * restDistY, -0.2),
-                        pinned: y === 0 // Pin top row to shoulders
+                        pos: new THREE.Vector3((x - segmentsX/2 + 0.5) * restDistX, 1.68 - y * restDistY, -0.22),
+                        oldPos: new THREE.Vector3((x - segmentsX/2 + 0.5) * restDistX, 1.68 - y * restDistY, -0.22),
+                        pinned: y === 0
                     });
                 }
             }
 
-            // Constraints Setup (Structural and Shear)
-            const index = (x, y) => y * segmentsX + x;
+            physics.constraints = [];
+            const idx = (x, y) => y * segmentsX + x;
             for (let y = 0; y < segmentsY; y++) {
                 for (let x = 0; x < segmentsX; x++) {
-                    // Structural Horizontal
-                    if (x < segmentsX - 1) physics.constraints.push({ p1: physics.particles[index(x, y)], p2: physics.particles[index(x+1, y)], dist: restDistX });
-                    // Structural Vertical
-                    if (y < segmentsY - 1) physics.constraints.push({ p1: physics.particles[index(x, y)], p2: physics.particles[index(x, y+1)], dist: restDistY });
+                    if (x < segmentsX - 1) physics.constraints.push({ p1: physics.particles[idx(x,y)], p2: physics.particles[idx(x+1,y)], dist: restDistX });
+                    if (y < segmentsY - 1) physics.constraints.push({ p1: physics.particles[idx(x,y)], p2: physics.particles[idx(x,y+1)], dist: restDistY });
                 }
             }
         }
@@ -396,235 +537,271 @@
         function updatePhysics(dt) {
             if (!physics.mesh) return;
 
-            // 1. Determine anchor points (Shoulders)
-            const p1 = new THREE.Vector3(), p2 = new THREE.Vector3();
+            const p1 = new THREE.Vector3();
+            const p2 = new THREE.Vector3();
             character.rig.lArm.root.getWorldPosition(p1);
             character.rig.rArm.root.getWorldPosition(p2);
-            p1.z -= 0.15; p1.y += 0.05; p2.z -= 0.15; p2.y += 0.05;
+            p1.z -= 0.18; p1.y += 0.06;
+            p2.z -= 0.18; p2.y += 0.06;
 
-            // 2. Integration & Forces
-            const gravity = new THREE.Vector3(0, -9.8 * dt * dt, 0);
-            const wind = new THREE.Vector3(Math.sin(state.time * 2) * 0.005, 0, Math.sin(state.time * 1.5) * 0.005);
+            const gravity = new THREE.Vector3(0, -9.81 * dt * dt, 0);
+            const wind = new THREE.Vector3(Math.sin(state.time * 2.2) * 0.0045, 0, Math.cos(state.time * 1.8) * 0.003);
 
             physics.particles.forEach((p, i) => {
                 if (p.pinned) {
-                    // Interpolate pin position between left and right shoulder
-                    const t = (i % 5) / 4; 
+                    const t = (i % 6) / 5;
                     p.pos.lerpVectors(p1, p2, t);
                     p.oldPos.copy(p.pos);
                 } else {
-                    const vel = p.pos.clone().sub(p.oldPos).multiplyScalar(0.98); // Damping
+                    const vel = p.pos.clone().sub(p.oldPos).multiplyScalar(0.91); // strong damping
                     p.oldPos.copy(p.pos);
                     p.pos.add(vel).add(gravity).add(wind);
                 }
             });
 
-            // 3. Resolve Constraints (3 iterations for rigidity)
-            for (let i = 0; i < 3; i++) {
+            // 6 constraint iterations = rock-solid cloth
+            for (let i = 0; i < 6; i++) {
                 physics.constraints.forEach(c => {
                     const delta = c.p2.pos.clone().sub(c.p1.pos);
-                    const currentDist = delta.length();
-                    const error = (currentDist - c.dist) / currentDist;
-                    const offset = delta.multiplyScalar(0.5 * error);
+                    const dist = delta.length();
+                    if (dist < 0.001) return;
+                    const error = (dist - c.dist) / dist;
+                    const offset = delta.multiplyScalar(error * 0.48);
                     if (!c.p1.pinned) c.p1.pos.add(offset);
                     if (!c.p2.pinned) c.p2.pos.sub(offset);
                 });
             }
 
-            // 4. Update Geometry Buffers
-            const positions = physics.mesh.geometry.attributes.position.array;
+            const posAttr = physics.mesh.geometry.attributes.position;
             physics.particles.forEach((p, i) => {
-                positions[i * 3] = p.pos.x;
-                positions[i * 3 + 1] = p.pos.y;
-                positions[i * 3 + 2] = p.pos.z;
+                posAttr.array[i * 3]     = p.pos.x;
+                posAttr.array[i * 3 + 1] = p.pos.y;
+                posAttr.array[i * 3 + 2] = p.pos.z;
             });
-            physics.mesh.geometry.attributes.position.needsUpdate = true;
+            posAttr.needsUpdate = true;
             physics.mesh.geometry.computeVertexNormals();
         }
 
-        // --- Web Audio FFT (Visemes) ---
+        // === AUDIO & FACE ===
         async function toggleAudio() {
-            if (audio.active) return;
+            if (audio.active) {
+                audio.active = false;
+                document.getElementById('audio-label').textContent = 'Enable Mic (Real-time Visemes)';
+                document.getElementById('btn-audio').classList.remove('active');
+                return;
+            }
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const source = audio.ctx.createMediaStreamSource(stream);
                 audio.analyser = audio.ctx.createAnalyser();
-                audio.analyser.fftSize = 128; // Fast resolution
+                audio.analyser.fftSize = 128;
                 source.connect(audio.analyser);
                 audio.data = new Uint8Array(audio.analyser.frequencyBinCount);
                 audio.active = true;
-                
+
                 const btn = document.getElementById('btn-audio');
                 btn.classList.add('active');
-                btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg> Audio Active`;
-            } catch (err) {
-                alert("Microphone access is required for lip-sync functionality.");
+                document.getElementById('audio-label').innerHTML = `
+                    <span class="inline-block w-3 h-3 bg-emerald-400 rounded-full animate-pulse mr-1"></span>
+                    Audio Active (FFT)
+                `;
+            } catch (e) {
+                alert("Microphone permission required for real-time visemes.");
             }
         }
 
         function updateFace() {
-            // Procedural Blinking
-            if (Math.random() < 0.01) {
-                character.rig.lEye.scale.z = 0.1; character.rig.rEye.scale.z = 0.1;
-            } else {
-                character.rig.lEye.scale.z = THREE.MathUtils.lerp(character.rig.lEye.scale.z, 1, 0.2);
-                character.rig.rEye.scale.z = THREE.MathUtils.lerp(character.rig.rEye.scale.z, 1, 0.2);
-            }
+            // Blinking (correct axis)
+            const blink = Math.random() < 0.008 ? 0.08 : 1;
+            character.rig.lEye.scale.y = THREE.MathUtils.lerp(character.rig.lEye.scale.y, blink, 0.35);
+            character.rig.rEye.scale.y = THREE.MathUtils.lerp(character.rig.rEye.scale.y, blink, 0.35);
 
-            // Viseme Jaw Drop
+            // Jaw viseme (rotation = natural)
             if (audio.active) {
                 audio.analyser.getByteFrequencyData(audio.data);
-                let vol = 0;
-                for (let i = 0; i < audio.data.length; i++) vol += audio.data[i];
-                vol /= audio.data.length;
-                
-                // Map volume (0-255) to jaw drop translation
-                const drop = (vol / 255) * 0.04;
-                character.rig.jaw.position.y = THREE.MathUtils.lerp(character.rig.jaw.position.y, -0.02 - drop, 0.3);
+                let sum = 0;
+                for (let i = 0; i < audio.data.length; i++) sum += audio.data[i];
+                const volume = sum / audio.data.length;
+
+                const targetOpen = Math.min(0.75, volume / 140);
+                character.rig.jaw.rotation.x = THREE.MathUtils.lerp(character.rig.jaw.rotation.x, targetOpen, 0.45);
+            } else {
+                character.rig.jaw.rotation.x = THREE.MathUtils.lerp(character.rig.jaw.rotation.x, 0.08, 0.25);
             }
         }
 
-        // --- Continuous Media Recording Pipeline ---
+        // === RECORDING ===
         function formatTime(sec) {
             const m = Math.floor(sec / 60).toString().padStart(2, '0');
             const s = (sec % 60).toString().padStart(2, '0');
-            return `${m}:${s}`;
+            return `\( {m}: \){s}`;
         }
 
         function toggleRecording() {
             const btn = document.getElementById('btn-record');
             const txt = document.getElementById('record-text');
-            const timerUI = document.getElementById('record-timer');
+            const timer = document.getElementById('record-timer');
 
             if (!recorder.active) {
-                // START RECORDING
                 try {
-                    const stream = renderer.domElement.captureStream(60); // 60 FPS
+                    const stream = renderer.domElement.captureStream(60);
                     recorder.instance = new MediaRecorder(stream, {
-                        mimeType: 'video/webm; codecs=vp9',
-                        videoBitsPerSecond: 10000000 // 10 Mbps High Bitrate
+                        mimeType: 'video/webm;codecs=vp9',
+                        videoBitsPerSecond: 12000000
                     });
 
                     recorder.chunks = [];
-                    recorder.instance.ondataavailable = (e) => { if (e.data.size > 0) recorder.chunks.push(e.data); };
-                    
+                    recorder.instance.ondataavailable = e => e.data.size && recorder.chunks.push(e.data);
                     recorder.instance.onstop = () => {
                         const blob = new Blob(recorder.chunks, { type: 'video/webm' });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = `anim_studio_pro_${Date.now()}.webm`;
+                        a.download = `procedural_anim_${Date.now()}.webm`;
                         a.click();
                         URL.revokeObjectURL(url);
                     };
 
-                    recorder.instance.start(1000); // Collect data every second
+                    recorder.instance.start(1000);
                     recorder.active = true;
-                    recorder.startTime = Math.floor(Date.now() / 1000);
-                    
-                    // UI Update
+                    recorder.startTime = Date.now() / 1000;
+
                     btn.classList.add('recording');
-                    txt.innerText = "STOP RECORDING";
-                    timerUI.classList.add('visible');
-                    timerUI.innerText = "00:00";
-                    
+                    txt.textContent = "STOP RECORDING";
+                    timer.classList.add('visible');
+                    timer.textContent = "00:00";
+
                     recorder.interval = setInterval(() => {
                         const elapsed = Math.floor(Date.now() / 1000) - recorder.startTime;
-                        timerUI.innerText = formatTime(elapsed);
+                        timer.textContent = formatTime(elapsed);
                     }, 1000);
-
                 } catch (err) {
-                    console.error("Recording initialization failed:", err);
-                    alert("Your browser does not support high-bitrate WebM recording.");
+                    alert("Recording not supported in this browser.");
                 }
             } else {
-                // STOP RECORDING
                 recorder.instance.stop();
                 recorder.active = false;
                 clearInterval(recorder.interval);
-                
-                // UI Reset
                 btn.classList.remove('recording');
-                txt.innerText = "START RECORDING";
-                timerUI.classList.remove('visible');
+                txt.textContent = "START RECORDING";
+                timer.classList.remove('visible');
             }
         }
 
-        // --- UI & Interactions ---
+        // === UI HELPERS ===
         function setMode(mode) {
             state.mode = mode;
-            ['idle', 'walk', 'run'].forEach(m => document.getElementById(`mode-${m}`).classList.remove('active'));
-            document.getElementById(`mode-${mode}`).classList.add('active');
+            ['idle','walk','run'].forEach(m => {
+                const el = document.getElementById(`mode-${m}`);
+                if (el) el.classList.toggle('active', m === mode);
+            });
+        }
+
+        function resetAllParameters() {
+            document.getElementById('param-muscle').value = 1;
+            document.getElementById('param-legs').value = 1;
+            document.getElementById('param-scale').value = 1;
+            document.getElementById('val-muscle').textContent = '1.00';
+            document.getElementById('val-legs').textContent = '1.00';
+            document.getElementById('val-scale').textContent = '1.00';
+
+            character.root.scale.setScalar(1);
+            character.parameters.muscle = 1;
+            character.parameters.legs = 1;
+
+            // Reset muscle thickness
+            const s = new THREE.Vector3(1, 1, 1);
+            character.rig.chest.mesh.scale.copy(s);
+            character.rig.abdomen.mesh.scale.copy(s);
+            character.rig.lArm.upper.mesh.scale.copy(s);
+            character.rig.rArm.upper.mesh.scale.copy(s);
+            character.rig.lLeg.upper.mesh.scale.copy(s);
+            character.rig.rLeg.upper.mesh.scale.copy(s);
+
+            // Reset leg length
+            character.rig.lLeg.upper.mesh.scale.y = 1;
+            character.rig.rLeg.upper.mesh.scale.y = 1;
+            const originalKneeY = -(0.39 + 2 * 0.078);
+            character.rig.lLeg.lower.group.position.y = originalKneeY;
+            character.rig.rLeg.lower.group.position.y = originalKneeY;
+        }
+
+        function bindSlider(id, callback) {
+            const slider = document.getElementById(id);
+            const valEl = document.getElementById(id.replace('param-', 'val-'));
+            slider.addEventListener('input', e => {
+                const v = parseFloat(e.target.value);
+                valEl.textContent = v.toFixed(2);
+                callback(v);
+            });
         }
 
         function setupInteractions() {
-            const bindSlider = (id, callback) => {
-                document.getElementById(id).addEventListener('input', e => {
-                    const val = parseFloat(e.target.value);
-                    document.getElementById(id.replace('param', 'val')).innerText = val.toFixed(2);
-                    callback(val);
-                });
-            };
-
-            // Global Scale
-            bindSlider('param-scale', v => character.root.scale.setScalar(v));
-            
-            // Hypertrophy (Muscle Scaling via Capsule radius mapping)
-            bindSlider('param-muscle', v => {
-                const scale = new THREE.Vector3(v, 1, v);
-                character.rig.chest.mesh.scale.copy(scale);
-                character.rig.lArm.upper.mesh.scale.copy(scale);
-                character.rig.rArm.upper.mesh.scale.copy(scale);
-                character.rig.lLeg.upper.mesh.scale.copy(scale);
-                character.rig.rLeg.upper.mesh.scale.copy(scale);
+            // Scale
+            bindSlider('param-scale', v => {
+                character.root.scale.setScalar(v);
+                character.parameters.scale = v;
             });
 
-            // Leg Length (Parametric hierarchy shifting)
+            // Muscle
+            bindSlider('param-muscle', v => {
+                character.parameters.muscle = v;
+                const thick = new THREE.Vector3(v, 1, v);
+                character.rig.chest.mesh.scale.copy(thick);
+                character.rig.abdomen.mesh.scale.copy(thick);
+                character.rig.lArm.upper.mesh.scale.copy(thick);
+                character.rig.rArm.upper.mesh.scale.copy(thick);
+                character.rig.lLeg.upper.mesh.scale.copy(thick);
+                character.rig.rLeg.upper.mesh.scale.copy(thick);
+                character.rig.lArm.lower.mesh.scale.copy(new THREE.Vector3(v * 0.92, 1, v * 0.92));
+                character.rig.rArm.lower.mesh.scale.copy(new THREE.Vector3(v * 0.92, 1, v * 0.92));
+            });
+
+            // Legs
             bindSlider('param-legs', v => {
                 character.parameters.legs = v;
                 character.rig.lLeg.upper.mesh.scale.y = v;
                 character.rig.rLeg.upper.mesh.scale.y = v;
-                character.rig.lLeg.lower.group.position.y = -0.5 * v;
-                character.rig.rLeg.lower.group.position.y = -0.5 * v;
+
+                const newKnee = -(0.39 * v + 2 * 0.078);
+                character.rig.lLeg.lower.group.position.y = newKnee;
+                character.rig.rLeg.lower.group.position.y = newKnee;
             });
 
-            // Color Swaps
+            // Colors
             document.getElementById('param-skin').addEventListener('input', e => {
-                character.root.traverse(child => {
-                    if(child.isMesh && child.material.color && child !== character.rig.pelvis.mesh && child !== character.rig.lEye && child !== character.rig.rEye && child.geometry.type !== "SphereGeometry") {
-                        if(child === character.rig.headMesh || child === character.rig.jaw || child.parent === character.rig.lArm.lower.group || child.parent === character.rig.rArm.lower.group) {
-                             child.material.color.set(e.target.value);
-                        } else if (child.geometry.type === "CapsuleGeometry") {
-                            child.material.color.set(e.target.value);
-                        }
-                    }
-                });
-                character.rig.headMesh.material.color.set(e.target.value);
+                const c = new THREE.Color(e.target.value);
+                character.skinMeshes.forEach(mesh => mesh.material.color.set(c));
             });
 
             document.getElementById('param-cloak').addEventListener('input', e => {
-                physics.mesh.material.color.set(e.target.value);
+                if (physics.mesh) physics.mesh.material.color.set(e.target.value);
             });
 
             document.getElementById('btn-audio').onclick = toggleAudio;
 
-            // Simple Camera Orbit
-            let isDragging = false, prevX = 0, camAngle = 0;
-            document.addEventListener('mousedown', e => { if(e.clientX > 360 && e.clientX < window.innerWidth - 320) isDragging = true; prevX = e.clientX; });
-            document.addEventListener('mouseup', () => isDragging = false);
-            document.addEventListener('mousemove', e => {
-                if(isDragging) {
-                    camAngle -= (e.clientX - prevX) * 0.01;
-                    camera.position.x = 4.5 * Math.sin(camAngle);
-                    camera.position.z = 4.5 * Math.cos(camAngle);
-                    camera.lookAt(0, 1.1, 0);
+            // Camera orbit
+            let isDragging = false, prevX = 0, angle = 0.8;
+            document.addEventListener('mousedown', e => {
+                if (e.clientX > 380 && e.clientX < window.innerWidth - 330) {
+                    isDragging = true;
                     prevX = e.clientX;
                 }
             });
+            document.addEventListener('mouseup', () => isDragging = false);
+            document.addEventListener('mousemove', e => {
+                if (!isDragging) return;
+                angle -= (e.clientX - prevX) * 0.0065;
+                camera.position.x = 5.2 * Math.sin(angle);
+                camera.position.z = 5.2 * Math.cos(angle);
+                camera.lookAt(0, 1.15, 0);
+                prevX = e.clientX;
+            });
         }
 
-        // --- Main Animation & Kinematics Loop ---
+        // === ANIMATION LOOP ===
         function animate() {
             requestAnimationFrame(animate);
             const dt = clock.getDelta();
@@ -636,72 +813,103 @@
             const t = state.time;
             const r = character.rig;
 
-            // Reset base rotations
-            r.chest.group.rotation.set(0,0,0);
-            r.abdomen.group.rotation.set(0,0,0);
-            r.headGroup.rotation.set(0,0,0);
+            // Reset torso
+            r.chest.group.rotation.set(0, 0, 0);
+            r.abdomen.group.rotation.set(0, 0, 0);
+            r.headGroup.rotation.set(0, 0, 0);
 
             if (state.mode === 'idle') {
-                const b = Math.sin(t * 1.5);
-                r.chest.group.rotation.x = b * 0.02;
-                r.lArm.root.rotation.z = 0.1;
-                r.rArm.root.rotation.z = -0.1;
-                r.lArm.root.rotation.x = b * 0.05;
-                r.rArm.root.rotation.x = -b * 0.05;
-                r.lLeg.root.rotation.x = 0; r.rLeg.root.rotation.x = 0;
-                r.lLeg.lower.group.rotation.x = 0; r.rLeg.lower.group.rotation.x = 0;
-                
-                // Base stance
-                const legLen = character.parameters.legs;
-                r.pelvis.group.position.y = 1.05 + ((legLen - 1) * 0.5);
+                const breathe = Math.sin(t * 1.4) * 0.018;
+                r.chest.group.rotation.x = breathe;
+                r.headGroup.rotation.x = breathe * 0.6;
 
-                // Slight dynamic camera drift for premium feel
-                if (!recorder.active) {
-                    camera.position.x += Math.sin(t * 0.5) * 0.002;
-                    camera.position.y += Math.cos(t * 0.3) * 0.002;
-                    camera.lookAt(0, 1.1, 0);
-                }
+                r.lArm.root.rotation.z = 0.12;
+                r.rArm.root.rotation.z = -0.12;
+                r.lArm.root.rotation.x = Math.sin(t * 1.1) * 0.04;
+                r.rArm.root.rotation.x = -Math.sin(t * 1.1) * 0.04;
+
+                // Gentle hip sway
+                r.pelvis.group.position.y = 1.02 + Math.sin(t * 1.8) * 0.008;
 
             } else {
-                // Procedural Gait Math (Walk/Run)
                 const isRun = state.mode === 'run';
-                const speed = isRun ? 12 : 6;
+                const speed = isRun ? 13 : 6.5;
                 const phase = (t * speed) % (Math.PI * 2);
-                const stride = isRun ? 1.0 : 0.6;
+                const stride = isRun ? 1.05 : 0.62;
                 const legLen = character.parameters.legs;
 
-                // Elliptical Gait Cycle for Legs
-                // Left Leg
+                // Legs
                 r.lLeg.root.rotation.x = Math.sin(phase) * stride;
-                // Knee bends only on swing phase (max limits to positive bending)
-                r.lLeg.lower.group.rotation.x = Math.max(0, -Math.sin(phase - 0.5) * stride * 1.5);
-                
-                // Right Leg (Phase shifted by PI)
+                r.lLeg.lower.group.rotation.x = Math.max(0, -Math.sin(phase - 0.6) * stride * 1.65);
                 r.rLeg.root.rotation.x = Math.sin(phase + Math.PI) * stride;
-                r.rLeg.lower.group.rotation.x = Math.max(0, -Math.sin(phase + Math.PI - 0.5) * stride * 1.5);
+                r.rLeg.lower.group.rotation.x = Math.max(0, -Math.sin(phase + Math.PI - 0.6) * stride * 1.65);
 
-                // Arms counter-swing
-                r.lArm.root.rotation.x = Math.sin(phase + Math.PI) * stride * 0.8;
-                r.lArm.lower.group.rotation.x = -0.1 + Math.max(0, -Math.sin(phase + Math.PI) * stride);
-                r.lArm.root.rotation.z = 0.15; // keep slightly away from body
+                // Arms counter
+                r.lArm.root.rotation.x = Math.sin(phase + Math.PI) * stride * 0.85;
+                r.rArm.root.rotation.x = Math.sin(phase) * stride * 0.85;
+                r.lArm.root.rotation.z = 0.18;
+                r.rArm.root.rotation.z = -0.18;
 
-                r.rArm.root.rotation.x = Math.sin(phase) * stride * 0.8;
-                r.rArm.lower.group.rotation.x = -0.1 + Math.max(0, -Math.sin(phase) * stride);
-                r.rArm.root.rotation.z = -0.15;
+                // Torso & bounce
+                const baseY = 1.02 + (legLen - 1) * 0.22;
+                r.pelvis.group.position.y = baseY + Math.abs(Math.cos(phase)) * (isRun ? 0.11 : 0.055);
 
-                // Center of Gravity shifting (Double support drop)
-                const baseHeight = 1.05 + ((legLen - 1) * 0.5);
-                const bounce = isRun ? 0.1 : 0.05;
-                r.pelvis.group.position.y = baseHeight + Math.abs(Math.cos(phase)) * bounce;
-                
-                // Torso rotation compensating for legs
-                r.abdomen.group.rotation.y = Math.sin(phase) * 0.15;
-                r.chest.group.rotation.y = Math.sin(phase) * -0.1;
-                r.chest.group.rotation.x = isRun ? 0.2 : 0.05; // Lean forward
-                r.headGroup.rotation.y = Math.sin(phase) * 0.05; // Keep head relatively straight
+                r.abdomen.group.rotation.y = Math.sin(phase) * 0.14;
+                r.chest.group.rotation.y = Math.sin(phase) * -0.09;
+                r.chest.group.rotation.x = isRun ? 0.22 : 0.07;
             }
 
             renderer.render(scene, camera);
+        }
+
+        // === INIT ===
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0f);
+            scene.fog = new THREE.FogExp2(0x0a0a0f, 0.075);
+
+            camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.1, 200);
+            camera.position.set(4.8, 2.1, 5.8);
+            camera.lookAt(0, 1.15, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.15;
+            document.body.appendChild(renderer.domElement);
+
+            clock = new THREE.Clock();
+
+            // Studio lighting
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x444466, 0.45));
+            const key = new THREE.SpotLight(0xffffff, 1.6, 0, Math.PI / 5.5, 0.6);
+            key.position.set(5, 7, 6);
+            key.castShadow = true;
+            key.shadow.mapSize.set(2048, 2048);
+            scene.add(key);
+            scene.add(new THREE.PointLight(0xa78bfa, 2.2, 20)).position.set(-4, 4, -5);
+
+            // Floor
+            const floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(40, 40),
+                new THREE.MeshStandardMaterial({ color: 0x111113, roughness: 1 })
+            );
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            const grid = new THREE.GridHelper(40, 70, 0x27272a, 0x18181b);
+            grid.position.y = 0.01;
+            scene.add(grid);
+
+            buildOrganicHuman();
+            initVerletCloak();
+            setupInteractions();
+
+            animate();
         }
 
         window.onload = init;
@@ -713,4 +921,3 @@
     </script>
 </body>
 </html>
-
