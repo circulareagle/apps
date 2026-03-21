@@ -3,738 +3,713 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Procedural Animation Studio - Non-AI Framework</title>
+    <title>Procedural Animation Studio Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --panel-bg: rgba(20, 24, 30, 0.95); --accent: #3b82f6; }
-        body { margin: 0; overflow: hidden; background: #0f1115; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #e2e8f0; }
-        canvas { display: block; width: 100vw; height: 100vh; }
+        :root { --bg: #09090b; --panel: rgba(24, 24, 27, 0.85); --accent: #8b5cf6; --accent-hover: #7c3aed; --text: #f4f4f5; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; user-select: none; }
+        canvas { display: block; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
         
-        .panel { position: absolute; background: var(--panel-bg); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 10; display: flex; flex-direction: column; }
-        .left-panel { top: 20px; left: 20px; width: 320px; bottom: 20px; overflow-y: auto; }
-        .bottom-panel { bottom: 20px; left: 360px; right: 20px; height: 80px; flex-direction: row; align-items: center; justify-content: space-between; padding: 0 20px; }
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; justify-content: space-between; padding: 24px; box-sizing: border-box; }
+        .panel { pointer-events: auto; background: var(--panel); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        .left-panel { width: 340px; max-height: calc(100vh - 48px); overflow-y: auto; }
+        .right-panel { width: 300px; max-height: calc(100vh - 48px); }
         
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
 
-        .section-title { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; margin: 15px 0 10px 0; font-weight: 700; border-bottom: 1px solid #334155; padding-bottom: 4px; }
-        .control-group { margin-bottom: 12px; }
-        label { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px; color: #cbd5e1; }
+        h1 { font-size: 1.25rem; font-weight: 700; margin: 0; letter-spacing: -0.025em; }
+        h2 { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #a1a1aa; margin: 0 0 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; }
         
-        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%; background: var(--accent); cursor: pointer; margin-top: -4px; }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #334155; border-radius: 2px; }
+        .control-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .control-label { font-size: 0.8rem; color: #d4d4d8; }
+        .control-val { font-size: 0.75rem; color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
         
-        input[type=color] { width: 100%; height: 24px; border: none; border-radius: 4px; cursor: pointer; background: transparent; }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; margin: 4px 0 12px 0; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 10px rgba(139, 92, 246, 0.5); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; cursor: pointer; }
         
-        button { background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; }
-        button:hover { background: #475569; }
-        button.active { background: var(--accent); }
-        button.danger { background: #ef4444; }
-        button.danger:hover { background: #dc2626; }
+        input[type=color] { -webkit-appearance: none; border: none; width: 100%; height: 32px; border-radius: 8px; cursor: pointer; background: transparent; padding: 0; margin-bottom: 12px; }
+        input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type=color]::-webkit-color-swatch { border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; }
 
-        #mic-status { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block; }
-        #mic-status.active { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+        button { background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 10px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        button:hover { background: rgba(255,255,255,0.1); }
+        button.active { background: var(--accent); border-color: var(--accent-hover); box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
+        
+        #btn-record { background: #e11d48; border-color: #be123c; color: white; margin-top: auto; }
+        #btn-record:hover { background: #be123c; }
+        #btn-record.recording { animation: pulse-record 2s infinite; background: transparent; border: 2px solid #e11d48; color: #e11d48; }
+        
+        @keyframes pulse-record { 0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(225, 29, 72, 0); } 100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); } }
 
-        #recording-indicator { position: fixed; top: 20px; right: 20px; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; display: none; align-items: center; gap: 8px; z-index: 100; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .time-display { font-family: monospace; font-size: 1.2rem; text-align: center; color: #e11d48; display: none; margin-top: 8px; font-weight: bold; }
+        .time-display.visible { display: block; }
     </style>
 </head>
 <body>
 
-    <div id="recording-indicator">
-        <div class="w-3 h-3 bg-red-500 rounded-full"></div> REC
-    </div>
-
-    <!-- Hierarchy & Customization Panel -->
-    <div class="panel left-panel p-4">
-        <h1 class="text-lg font-bold text-white mb-1">Anim Studio</h1>
-        <p class="text-xs text-slate-400 mb-4">Procedural Kinematics & WebAudio</p>
-
-        <div class="section-title">Parametric Morphology</div>
-        <div class="control-group">
-            <label><span>Overall Scale</span> <span id="val-scale">1.0</span></label>
-            <input type="range" id="scale" min="0.5" max="1.5" step="0.01" value="1">
-        </div>
-        <div class="control-group">
-            <label><span>Leg Length</span> <span id="val-legs">1.0</span></label>
-            <input type="range" id="legLength" min="0.6" max="1.8" step="0.01" value="1">
-        </div>
-        <div class="control-group">
-            <label><span>Arm Length</span> <span id="val-arms">1.0</span></label>
-            <input type="range" id="armLength" min="0.6" max="1.8" step="0.01" value="1">
-        </div>
-        <div class="control-group">
-            <label><span>Shoulder Width</span> <span id="val-shoulders">1.0</span></label>
-            <input type="range" id="shoulderWidth" min="0.7" max="1.5" step="0.01" value="1">
-        </div>
-
-        <div class="section-title">Material Properties</div>
-        <div class="grid grid-cols-2 gap-2 mb-4">
+    <div class="ui-layer">
+        <!-- Anatomy & Configuration -->
+        <div class="panel left-panel">
             <div>
-                <label>Skin Tone</label>
-                <input type="color" id="colorSkin" value="#ffb69b">
+                <h1>Anim Studio Pro</h1>
+                <p class="text-xs text-zinc-400 mt-1 mb-4">Organic Capsule Rig & Deterministic IK</p>
             </div>
-            <div>
-                <label>Apparel</label>
-                <input type="color" id="colorShirt" value="#2563eb">
-            </div>
-            <div>
-                <label>Trousers</label>
-                <input type="color" id="colorPants" value="#1e293b">
-            </div>
-            <div>
-                <label>Cape (Verlet)</label>
-                <input type="color" id="colorCape" value="#ef4444">
-            </div>
-        </div>
 
-        <div class="section-title">Environment</div>
-        <div class="control-group">
-            <label><span>Camera Height</span></label>
-            <input type="range" id="camHeight" min="0" max="4" step="0.1" value="1.5">
-        </div>
-        
-        <div class="mt-auto pt-4 flex flex-col gap-2">
-            <button onclick="downloadJSON()" class="w-full text-xs">Save Configuration (JSON)</button>
-        </div>
-    </div>
+            <div>
+                <h2>Morphology & Scale</h2>
+                <div class="control-row"><span class="control-label">Muscular Hypertrophy</span><span class="control-val" id="val-muscle">1.0</span></div>
+                <input type="range" id="param-muscle" min="0.7" max="1.5" step="0.01" value="1">
 
-    <!-- Timeline / Transport Panel -->
-    <div class="panel bottom-panel">
-        <div class="flex gap-2">
-            <button id="btn-idle" class="active" onclick="setAnimation('idle')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-                Idle / Breathe
-            </button>
-            <button id="btn-walk" onclick="setAnimation('walk')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 4v16M13 4l-4 4M13 4l4 4"/></svg>
-                Procedural Walk
-            </button>
-        </div>
+                <div class="control-row"><span class="control-label">Femur / Leg Length</span><span class="control-val" id="val-legs">1.0</span></div>
+                <input type="range" id="param-legs" min="0.7" max="1.5" step="0.01" value="1">
 
-        <div class="flex gap-4 items-center">
-            <div class="flex flex-col">
-                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Facial & Audio Driver</span>
-                <button onclick="toggleMic()" id="btn-mic">
-                    <div id="mic-status"></div>
-                    Enable Lip-Sync
+                <div class="control-row"><span class="control-label">Global Character Scale</span><span class="control-val" id="val-scale">1.0</span></div>
+                <input type="range" id="param-scale" min="0.5" max="1.5" step="0.01" value="1">
+            </div>
+
+            <div>
+                <h2>Material Pigmentation</h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <span class="control-label block mb-1">Epidermis (Skin)</span>
+                        <input type="color" id="param-skin" value="#e8b49b">
+                    </div>
+                    <div>
+                        <span class="control-label block mb-1">Verlet Cloak</span>
+                        <input type="color" id="param-cloak" value="#8b5cf6">
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h2>Facial Animation Engine</h2>
+                <button id="btn-audio" class="w-full">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                    Enable Mic (FFT Visemes)
                 </button>
+                <p class="text-[10px] text-zinc-500 mt-2 leading-tight">Parses audio frequencies in real-time to drive the vertical translation of the procedural jaw mesh.</p>
             </div>
-            <div class="w-px h-8 bg-slate-700"></div>
-            <div class="flex flex-col">
-                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Export Engine</span>
-                <button class="danger" onclick="startRecording()" id="btn-record">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-                    Record 5s WebM
+        </div>
+
+        <!-- Timeline & Export -->
+        <div class="panel right-panel">
+            <div>
+                <h2>Procedural Timeline</h2>
+                <div class="flex flex-col gap-2">
+                    <button id="mode-idle" class="active" onclick="setMode('idle')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                        Idle / Breathe
+                    </button>
+                    <button id="mode-walk" onclick="setMode('walk')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-4.24 4.24a1 1 0 1 0 3 3l3-3"/><path d="m14 14-3.35-3.35"/></svg>
+                        Continuous Gait Cycle
+                    </button>
+                    <button id="mode-run" onclick="setMode('run')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v-2.38C4 11.5 7.14 9 11 9h2"/><path d="M17 9v8"/><path d="M21 13h-8"/><path d="M11 9V5c0-1.66-1.34-3-3-3S5 3.34 5 5v2"/></svg>
+                        Sprint Kinematics
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-auto flex flex-col">
+                <h2>Continuous Export Engine</h2>
+                <button id="btn-record" onclick="toggleRecording()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                    <span id="record-text">START RECORDING</span>
                 </button>
+                <div id="record-timer" class="time-display">00:00</div>
+                <p class="text-[10px] text-zinc-500 mt-2 text-center">Captures buffer to High-Bitrate WebM.</p>
             </div>
         </div>
     </div>
 
     <script>
-        // --- GLOBALS & ARCHITECTURE ---
+        // --- Core Architecture & State ---
         let scene, camera, renderer, clock;
-        let character = { root: null, joints: {}, meshes: {}, parameters: {} };
-        let physics = { particles: [], constraints: [], enabled: true };
-        let audio = { context: null, analyser: null, dataArray: null, enabled: false };
-        let animationState = { mode: 'idle', time: 0, blinkTimer: 0, saccadeTimer: 0 };
-        let recordingState = { isRecording: false, chunks: [], recorder: null };
+        let character = { root: null, rig: {}, parameters: { muscle: 1.0, legs: 1.0 } };
+        let physics = { particles: [], constraints: [] };
+        let audio = { ctx: null, analyser: null, data: null, active: false };
+        let state = { mode: 'idle', time: 0 };
+        
+        // Recording State
+        let recorder = { instance: null, chunks: [], active: false, startTime: 0, interval: null };
 
         // Colors
-        const colors = {
-            skin: 0xffb69b,
-            shirt: 0x2563eb,
-            pants: 0x1e293b,
-            cape: 0xef4444,
-            eye: 0x111111
+        const palette = {
+            skin: new THREE.Color(0xe8b49b),
+            shorts: new THREE.Color(0x18181b),
+            cloak: new THREE.Color(0x8b5cf6),
+            eye: new THREE.Color(0xffffff),
+            pupil: new THREE.Color(0x09090b)
         };
 
-        init();
-
+        // --- Initialization ---
         function init() {
-            // 1. Scene Setup
+            // Scene setup
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x0f1115, 0.05);
+            scene.background = new THREE.Color(0x09090b);
+            scene.fog = new THREE.FogExp2(0x09090b, 0.08);
 
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-            camera.position.set(3, 1.5, 4);
-            camera.lookAt(0, 1, 0);
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(3, 1.8, 4.5);
+            camera.lookAt(0, 1.1, 0);
 
+            // Renderer setup (High Quality)
             renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Performance optimization
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.1;
             document.body.appendChild(renderer.domElement);
 
             clock = new THREE.Clock();
 
-            // 2. Lighting (High fidelity)
-            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
-            hemiLight.position.set(0, 20, 0);
+            // Lighting (Cinematic Studio Setup)
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4);
+            hemiLight.position.set(0, 10, 0);
             scene.add(hemiLight);
 
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            dirLight.position.set(5, 10, 7);
-            dirLight.castShadow = true;
-            dirLight.shadow.mapSize.width = 1024;
-            dirLight.shadow.mapSize.height = 1024;
-            dirLight.shadow.bias = -0.001;
-            scene.add(dirLight);
+            const keyLight = new THREE.SpotLight(0xffffff, 1.5);
+            keyLight.position.set(4, 6, 4);
+            keyLight.angle = Math.PI / 6;
+            keyLight.penumbra = 0.5;
+            keyLight.castShadow = true;
+            keyLight.shadow.mapSize.width = 2048;
+            keyLight.shadow.mapSize.height = 2048;
+            scene.add(keyLight);
 
-            // 3. Environment
-            const grid = new THREE.GridHelper(20, 20, 0x334155, 0x1e293b);
+            const rimLight = new THREE.PointLight(0x8b5cf6, 2, 10);
+            rimLight.position.set(-3, 3, -4);
+            scene.add(rimLight);
+
+            // Environment
+            const grid = new THREE.GridHelper(30, 60, 0x27272a, 0x18181b);
+            grid.position.y = -0.01;
             scene.add(grid);
-            
-            const floorGeo = new THREE.PlaneGeometry(20, 20);
-            const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f1115, depthWrite: false });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
+
+            const floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(30, 30),
+                new THREE.MeshStandardMaterial({ color: 0x09090b, depthWrite: false, roughness: 1 })
+            );
             floor.rotation.x = -Math.PI / 2;
             floor.receiveShadow = true;
             scene.add(floor);
 
-            // 4. Construct Systems
-            buildCharacterRig();
-            initVerletCloth();
-            setupInteractivity();
-
-            // 5. Start Loop
+            buildOrganicHuman();
+            initVerletCloak();
+            setupInteractions();
+            
             animate();
         }
 
-        // --- RIGGING AND MORPHOLOGY ---
-        function createBone(w, h, d, color, pivotY) {
-            const group = new THREE.Group();
-            const geo = new THREE.BoxGeometry(w, h, d);
-            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.6 });
+        // --- Organic Skinning & Rigging Pipeline ---
+        // Generates seamlessly overlapping capsule joints
+        function createBone(radius, length, mat, pivotOffset) {
+            // Total height of capsule is length + 2*radius
+            const geo = new THREE.CapsuleGeometry(radius, length, 4, 16);
             const mesh = new THREE.Mesh(geo, mat);
             mesh.castShadow = true;
             mesh.receiveShadow = true;
-            mesh.position.y = h/2 - pivotY; // Offset geometry relative to pivot
+            
+            const group = new THREE.Group();
+            // Offset the mesh so the group's origin becomes the joint pivot
+            mesh.position.copy(pivotOffset);
             group.add(mesh);
             return { group, mesh };
         }
 
-        function buildCharacterRig() {
+        function buildOrganicHuman() {
+            const matSkin = new THREE.MeshStandardMaterial({ color: palette.skin, roughness: 0.4, metalness: 0.1 });
+            const matShorts = new THREE.MeshStandardMaterial({ color: palette.shorts, roughness: 0.8 });
+
             character.root = new THREE.Group();
             scene.add(character.root);
 
-            // Hips (Root of hierarchy)
-            const hips = createBone(0.35, 0.2, 0.2, colors.pants, 0.1);
-            hips.group.position.y = 1.0;
-            character.root.add(hips.group);
-            character.joints.hips = hips.group;
+            // --- CORE / SPINE ---
+            // Pelvis
+            const pelvisRadius = 0.16;
+            character.rig.pelvis = createBone(pelvisRadius, 0.1, matShorts, new THREE.Vector3(0, 0, 0));
+            character.rig.pelvis.group.position.y = 1.05; // Base hip height
+            character.rig.pelvis.mesh.rotation.z = Math.PI / 2; // Horizontal capsule
+            character.root.add(character.rig.pelvis.group);
 
-            // Spine & Torso
-            const torso = createBone(0.35, 0.5, 0.2, colors.shirt, 0.0);
-            torso.group.position.y = 0.1;
-            hips.group.add(torso.group);
-            character.joints.torso = torso.group;
-            character.meshes.torso = torso.mesh;
+            // Abdomen
+            character.rig.abdomen = createBone(0.14, 0.15, matSkin, new THREE.Vector3(0, 0.15, 0));
+            character.rig.abdomen.group.position.y = 0.05;
+            character.rig.pelvis.group.add(character.rig.abdomen.group);
+
+            // Chest
+            character.rig.chest = createBone(0.18, 0.2, matSkin, new THREE.Vector3(0, 0.2, 0));
+            character.rig.chest.group.position.y = 0.28;
+            character.rig.abdomen.group.add(character.rig.chest.group);
 
             // Neck & Head
-            const neck = createBone(0.1, 0.1, 0.1, colors.skin, 0.0);
-            neck.group.position.y = 0.5;
-            torso.group.add(neck.group);
-            character.joints.neck = neck.group;
+            character.rig.neck = createBone(0.05, 0.08, matSkin, new THREE.Vector3(0, 0.09, 0));
+            character.rig.neck.group.position.y = 0.35;
+            character.rig.chest.group.add(character.rig.neck.group);
 
-            const head = createBone(0.25, 0.3, 0.25, colors.skin, 0.0);
-            head.group.position.y = 0.1;
-            neck.group.add(head.group);
-            character.joints.head = head.group;
+            character.rig.headGroup = new THREE.Group();
+            character.rig.headGroup.position.y = 0.15;
+            character.rig.neck.group.add(character.rig.headGroup);
 
-            // Facial Features (Visemes & Saccades targets)
-            const eyeGeo = new THREE.BoxGeometry(0.04, 0.04, 0.02);
-            const eyeMat = new THREE.MeshBasicMaterial({ color: colors.eye });
-            
-            const lEye = new THREE.Mesh(eyeGeo, eyeMat);
-            lEye.position.set(-0.06, 0.2, 0.13);
-            head.group.add(lEye);
-            character.meshes.lEye = lEye;
+            // Cranium (Squashed Sphere for organic head shape)
+            const headGeo = new THREE.SphereGeometry(0.12, 32, 32);
+            headGeo.scale(1, 1.2, 1.1);
+            const headMesh = new THREE.Mesh(headGeo, matSkin);
+            headMesh.position.y = 0.1;
+            headMesh.castShadow = true;
+            character.rig.headGroup.add(headMesh);
+            character.rig.headMesh = headMesh;
 
-            const rEye = new THREE.Mesh(eyeGeo, eyeMat);
-            rEye.position.set(0.06, 0.2, 0.13);
-            head.group.add(rEye);
-            character.meshes.rEye = rEye;
+            // Facial Features (Procedural Jaw)
+            const jawGeo = new THREE.CapsuleGeometry(0.04, 0.05, 4, 16);
+            jawGeo.scale(1.2, 1, 1);
+            character.rig.jaw = new THREE.Mesh(jawGeo, matSkin);
+            character.rig.jaw.position.set(0, -0.02, 0.08);
+            character.rig.jaw.rotation.z = Math.PI / 2;
+            character.rig.headGroup.add(character.rig.jaw);
 
-            const mouthGeo = new THREE.BoxGeometry(0.08, 0.02, 0.02);
-            const mouth = new THREE.Mesh(mouthGeo, eyeMat);
-            mouth.position.set(0, 0.08, 0.13);
-            head.group.add(mouth);
-            character.meshes.mouth = mouth;
+            // Eyes
+            const eyeGeo = new THREE.SphereGeometry(0.02, 16, 16);
+            const eyeMat = new THREE.MeshStandardMaterial({ color: palette.eye, roughness: 0.1 });
+            const pupilGeo = new THREE.SphereGeometry(0.01, 16, 16);
+            const pupilMat = new THREE.MeshBasicMaterial({ color: palette.pupil });
 
-            // Arms (Left & Right)
-            const createArm = (isLeft) => {
+            const createEye = (x) => {
+                const eye = new THREE.Mesh(eyeGeo, eyeMat);
+                eye.position.set(x, 0.12, 0.11);
+                const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+                pupil.position.set(0, 0, 0.015);
+                eye.add(pupil);
+                character.rig.headGroup.add(eye);
+                return eye;
+            };
+            character.rig.lEye = createEye(-0.04);
+            character.rig.rEye = createEye(0.04);
+
+            // --- LIMBS FABRICATION ---
+            // Helper to generate arms and legs with correct pivoting
+            const buildArm = (isLeft) => {
                 const sign = isLeft ? -1 : 1;
-                const shoulder = new THREE.Group();
-                shoulder.position.set(sign * 0.22, 0.45, 0);
-                torso.group.add(shoulder);
+                const armGroup = new THREE.Group();
+                armGroup.position.set(sign * 0.22, 0.3, 0); // Shoulder anchor
+                character.rig.chest.group.add(armGroup);
 
-                const upperArm = createBone(0.12, 0.35, 0.12, colors.shirt, 0.35);
-                shoulder.add(upperArm.group);
+                // Upper Arm (Pivot at top: y = -radius - length/2)
+                const uArm = createBone(0.06, 0.22, matSkin, new THREE.Vector3(0, -0.17, 0));
+                armGroup.add(uArm.group);
 
-                const elbow = new THREE.Group();
-                elbow.position.y = -0.35;
-                upperArm.group.add(elbow);
+                // Lower Arm (Pivot at top)
+                const lArm = createBone(0.05, 0.22, matSkin, new THREE.Vector3(0, -0.16, 0));
+                lArm.group.position.y = -0.34; // Elbow joint position
+                uArm.group.add(lArm.group);
 
-                const lowerArm = createBone(0.1, 0.35, 0.1, colors.skin, 0.35);
-                elbow.add(lowerArm.group);
+                // Hand
+                const handGeo = new THREE.SphereGeometry(0.06, 16, 16);
+                handGeo.scale(1, 1.2, 0.5);
+                const hand = new THREE.Mesh(handGeo, matSkin);
+                hand.position.y = -0.3;
+                lArm.group.add(hand);
 
-                return { shoulder, upperArm, elbow, lowerArm };
+                return { root: armGroup, upper: uArm, lower: lArm };
             };
 
-            const lArm = createArm(true);
-            character.joints.lShoulder = lArm.shoulder;
-            character.joints.lUpperArm = lArm.upperArm.group;
-            character.joints.lElbow = lArm.elbow;
-            character.meshes.lUpperArm = lArm.upperArm.mesh;
-            character.meshes.lLowerArm = lArm.lowerArm.mesh;
-
-            const rArm = createArm(false);
-            character.joints.rShoulder = rArm.shoulder;
-            character.joints.rUpperArm = rArm.upperArm.group;
-            character.joints.rElbow = rArm.elbow;
-            character.meshes.rUpperArm = rArm.upperArm.mesh;
-            character.meshes.rLowerArm = rArm.lowerArm.mesh;
-
-            // Legs (Left & Right)
-            const createLeg = (isLeft) => {
+            const buildLeg = (isLeft) => {
                 const sign = isLeft ? -1 : 1;
-                const hipJoint = new THREE.Group();
-                hipJoint.position.set(sign * 0.1, -0.1, 0);
-                hips.group.add(hipJoint);
+                const legGroup = new THREE.Group();
+                legGroup.position.set(sign * 0.12, 0, 0); // Hip socket
+                character.rig.pelvis.group.add(legGroup);
 
-                const thigh = createBone(0.14, 0.45, 0.14, colors.pants, 0.45);
-                hipJoint.add(thigh.group);
+                // Thigh
+                const thigh = createBone(0.08, 0.35, matSkin, new THREE.Vector3(0, -0.25, 0));
+                legGroup.add(thigh.group);
 
-                const knee = new THREE.Group();
-                knee.position.y = -0.45;
-                thigh.group.add(knee);
-
-                const calf = createBone(0.12, 0.45, 0.12, colors.skin, 0.45);
-                knee.add(calf.group);
+                // Calf
+                const calf = createBone(0.06, 0.35, matSkin, new THREE.Vector3(0, -0.23, 0));
+                calf.group.position.y = -0.5; // Knee joint
+                thigh.group.add(calf.group);
 
                 // Foot
-                const foot = createBone(0.14, 0.1, 0.2, colors.shirt, 0.05);
-                foot.group.position.set(0, -0.45, 0.05);
-                calf.group.add(foot.group);
+                const footGeo = new THREE.CapsuleGeometry(0.05, 0.15, 4, 16);
+                const foot = new THREE.Mesh(footGeo, matSkin);
+                foot.rotation.x = Math.PI / 2;
+                foot.position.set(0, -0.48, 0.05);
+                calf.group.add(foot);
 
-                return { hipJoint, thigh, knee, calf, foot };
+                return { root: legGroup, upper: thigh, lower: calf, foot: foot };
             };
 
-            const lLeg = createLeg(true);
-            character.joints.lHipJoint = lLeg.hipJoint;
-            character.joints.lThigh = lLeg.thigh.group;
-            character.joints.lKnee = lLeg.knee;
-            character.meshes.lThigh = lLeg.thigh.mesh;
-            character.meshes.lCalf = lLeg.calf.mesh;
-
-            const rLeg = createLeg(false);
-            character.joints.rHipJoint = rLeg.hipJoint;
-            character.joints.rThigh = rLeg.thigh.group;
-            character.joints.rKnee = rLeg.knee;
-            character.meshes.rThigh = rLeg.thigh.mesh;
-            character.meshes.rCalf = rLeg.calf.mesh;
+            character.rig.lArm = buildArm(true);
+            character.rig.rArm = buildArm(false);
+            character.rig.lLeg = buildLeg(true);
+            character.rig.rLeg = buildLeg(false);
         }
 
-        // --- VERLET PHYSICS SYSTEM (Cloth/Cape) ---
-        function initVerletCloth() {
-            const segments = 8;
-            const segmentLength = 0.15;
-            const capeMat = new THREE.MeshStandardMaterial({ color: colors.cape, side: THREE.DoubleSide });
-            
-            for(let i=0; i<segments; i++) {
-                // Visual Mesh
-                const geo = new THREE.BoxGeometry(0.3, segmentLength * 1.1, 0.02);
-                const mesh = new THREE.Mesh(geo, capeMat);
-                mesh.castShadow = true;
-                scene.add(mesh);
+        // --- Physics Engine: Verlet Integration Cloak ---
+        function initVerletCloak() {
+            const segmentsY = 8;
+            const segmentsX = 5;
+            const restDistY = 0.15;
+            const restDistX = 0.12;
 
-                // Particle Data
-                physics.particles.push({
-                    pos: new THREE.Vector3(0, 1.5 - i * segmentLength, -0.15),
-                    oldPos: new THREE.Vector3(0, 1.5 - i * segmentLength, -0.15),
-                    mesh: mesh,
-                    isPinned: i === 0
-                });
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: palette.cloak, side: THREE.DoubleSide, roughness: 0.6, 
+                wireframe: false 
+            });
 
-                // Constraints
-                if (i > 0) {
-                    physics.constraints.push({
-                        p1: physics.particles[i-1],
-                        p2: physics.particles[i],
-                        length: segmentLength
+            // Geometry setup (Plane deformed by particles)
+            const geo = new THREE.PlaneGeometry(restDistX * (segmentsX-1), restDistY * (segmentsY-1), segmentsX-1, segmentsY-1);
+            physics.mesh = new THREE.Mesh(geo, mat);
+            physics.mesh.castShadow = true;
+            scene.add(physics.mesh);
+
+            // Particle Setup
+            for (let y = 0; y < segmentsY; y++) {
+                for (let x = 0; x < segmentsX; x++) {
+                    physics.particles.push({
+                        pos: new THREE.Vector3((x - segmentsX/2) * restDistX, 1.5 - y * restDistY, -0.2),
+                        oldPos: new THREE.Vector3((x - segmentsX/2) * restDistX, 1.5 - y * restDistY, -0.2),
+                        pinned: y === 0 // Pin top row to shoulders
                     });
+                }
+            }
+
+            // Constraints Setup (Structural and Shear)
+            const index = (x, y) => y * segmentsX + x;
+            for (let y = 0; y < segmentsY; y++) {
+                for (let x = 0; x < segmentsX; x++) {
+                    // Structural Horizontal
+                    if (x < segmentsX - 1) physics.constraints.push({ p1: physics.particles[index(x, y)], p2: physics.particles[index(x+1, y)], dist: restDistX });
+                    // Structural Vertical
+                    if (y < segmentsY - 1) physics.constraints.push({ p1: physics.particles[index(x, y)], p2: physics.particles[index(x, y+1)], dist: restDistY });
                 }
             }
         }
 
         function updatePhysics(dt) {
-            if (!physics.enabled) return;
-            
-            // 1. Get pin target (Neck in world space)
-            const neckWorld = new THREE.Vector3();
-            character.joints.neck.getWorldPosition(neckWorld);
-            neckWorld.z -= 0.12; // Offset to back of neck
-            neckWorld.y += 0.05;
+            if (!physics.mesh) return;
+
+            // 1. Determine anchor points (Shoulders)
+            const p1 = new THREE.Vector3(), p2 = new THREE.Vector3();
+            character.rig.lArm.root.getWorldPosition(p1);
+            character.rig.rArm.root.getWorldPosition(p2);
+            p1.z -= 0.15; p1.y += 0.05; p2.z -= 0.15; p2.y += 0.05;
 
             // 2. Integration & Forces
             const gravity = new THREE.Vector3(0, -9.8 * dt * dt, 0);
-            // Simulate slight wind
-            const wind = new THREE.Vector3(Math.sin(clock.getElapsedTime()*2)*0.005, 0, Math.sin(clock.getElapsedTime()*1.5)*0.005);
+            const wind = new THREE.Vector3(Math.sin(state.time * 2) * 0.005, 0, Math.sin(state.time * 1.5) * 0.005);
 
-            physics.particles.forEach(p => {
-                if (p.isPinned) {
-                    p.pos.copy(neckWorld);
-                    p.oldPos.copy(neckWorld);
-                } else {
-                    const velocity = p.pos.clone().sub(p.oldPos);
-                    velocity.multiplyScalar(0.98); // Damping (air resistance)
-                    
+            physics.particles.forEach((p, i) => {
+                if (p.pinned) {
+                    // Interpolate pin position between left and right shoulder
+                    const t = (i % 5) / 4; 
+                    p.pos.lerpVectors(p1, p2, t);
                     p.oldPos.copy(p.pos);
-                    p.pos.add(velocity).add(gravity).add(wind);
+                } else {
+                    const vel = p.pos.clone().sub(p.oldPos).multiplyScalar(0.98); // Damping
+                    p.oldPos.copy(p.pos);
+                    p.pos.add(vel).add(gravity).add(wind);
                 }
             });
 
-            // 3. Solve Constraints (Iterative for stiffness)
-            for(let iter=0; iter<3; iter++) {
+            // 3. Resolve Constraints (3 iterations for rigidity)
+            for (let i = 0; i < 3; i++) {
                 physics.constraints.forEach(c => {
                     const delta = c.p2.pos.clone().sub(c.p1.pos);
-                    const dist = delta.length();
-                    const diff = (dist - c.length) / dist;
-                    const offset = delta.multiplyScalar(0.5 * diff);
-
-                    if(!c.p1.isPinned) c.p1.pos.add(offset);
-                    if(!c.p2.isPinned) c.p2.pos.sub(offset);
+                    const currentDist = delta.length();
+                    const error = (currentDist - c.dist) / currentDist;
+                    const offset = delta.multiplyScalar(0.5 * error);
+                    if (!c.p1.pinned) c.p1.pos.add(offset);
+                    if (!c.p2.pinned) c.p2.pos.sub(offset);
                 });
             }
 
-            // 4. Update Visuals
-            for(let i=0; i<physics.particles.length; i++) {
-                const p = physics.particles[i];
-                p.mesh.position.copy(p.pos);
-                if (i < physics.particles.length - 1) {
-                    p.mesh.lookAt(physics.particles[i+1].pos);
-                }
-            }
+            // 4. Update Geometry Buffers
+            const positions = physics.mesh.geometry.attributes.position.array;
+            physics.particles.forEach((p, i) => {
+                positions[i * 3] = p.pos.x;
+                positions[i * 3 + 1] = p.pos.y;
+                positions[i * 3 + 2] = p.pos.z;
+            });
+            physics.mesh.geometry.attributes.position.needsUpdate = true;
+            physics.mesh.geometry.computeVertexNormals();
         }
 
-        // --- WEB AUDIO API (Lip-Sync Visemes) ---
-        async function toggleMic() {
-            if (audio.enabled) {
-                // Disable
-                if (audio.context) audio.context.suspend();
-                audio.enabled = false;
-                document.getElementById('mic-status').classList.remove('active');
-                character.meshes.mouth.scale.y = 1;
-            } else {
-                // Enable
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    audio.context = new (window.AudioContext || window.webkitAudioContext)();
-                    const source = audio.context.createMediaStreamSource(stream);
-                    audio.analyser = audio.context.createAnalyser();
-                    audio.analyser.fftSize = 256;
-                    source.connect(audio.analyser);
-                    audio.dataArray = new Uint8Array(audio.analyser.frequencyBinCount);
-                    audio.enabled = true;
-                    document.getElementById('mic-status').classList.add('active');
-                } catch (err) {
-                    alert("Microphone access denied or unavailable.");
-                }
-            }
-        }
-
-        // --- UI & PARAMETRIC CONTROL ---
-        function setupInteractivity() {
-            // Camera Orbit
-            let isDragging = false;
-            let prevX = 0, prevY = 0;
-            let camAngleX = 0, camAngleY = 0.3;
-
-            document.addEventListener('mousedown', (e) => { if(e.clientX > 340) isDragging = true; });
-            document.addEventListener('mouseup', () => isDragging = false);
-            document.addEventListener('mousemove', (e) => {
-                if(isDragging) {
-                    camAngleX -= (e.clientX - prevX) * 0.01;
-                    camAngleY += (e.clientY - prevY) * 0.01;
-                    camAngleY = Math.max(-Math.PI/2, Math.min(Math.PI/2, camAngleY));
-                    
-                    const radius = 4;
-                    camera.position.x = radius * Math.sin(camAngleX) * Math.cos(camAngleY);
-                    camera.position.y = parseFloat(document.getElementById('camHeight').value) + radius * Math.sin(camAngleY);
-                    camera.position.z = radius * Math.cos(camAngleX) * Math.cos(camAngleY);
-                    camera.lookAt(0, parseFloat(document.getElementById('camHeight').value), 0);
-                }
-                prevX = e.clientX;
-                prevY = e.clientY;
-            });
-
-            // Sliders
-            const bindSlider = (id, callback) => {
-                const el = document.getElementById(id);
-                el.addEventListener('input', (e) => {
-                    document.getElementById('val-'+id.replace('Length','s').replace('Width','s').replace('scale','scale')).innerText = e.target.value;
-                    callback(parseFloat(e.target.value));
-                });
-            };
-
-            bindSlider('scale', v => character.root.scale.setScalar(v));
-            bindSlider('shoulderWidth', v => {
-                character.joints.lShoulder.position.x = -0.22 * v;
-                character.joints.rShoulder.position.x = 0.22 * v;
-                character.meshes.torso.scale.x = v;
-            });
-            bindSlider('legLength', v => {
-                character.meshes.lThigh.scale.y = v;
-                character.meshes.rThigh.scale.y = v;
-                character.meshes.lCalf.scale.y = v;
-                character.meshes.rCalf.scale.y = v;
-                character.joints.lKnee.position.y = -0.45 * v;
-                character.joints.rKnee.position.y = -0.45 * v;
-                character.root.position.y = (v - 1) * 0.9; // Adjust root to keep feet on ground
-            });
-            bindSlider('armLength', v => {
-                character.meshes.lUpperArm.scale.y = v;
-                character.meshes.rUpperArm.scale.y = v;
-                character.meshes.lLowerArm.scale.y = v;
-                character.meshes.rLowerArm.scale.y = v;
-                character.joints.lElbow.position.y = -0.35 * v;
-                character.joints.rElbow.position.y = -0.35 * v;
-            });
-
-            // Colors
-            const applyColor = (hex, meshList) => {
-                const col = new THREE.Color(hex);
-                meshList.forEach(m => {
-                    m.traverse(child => { if(child.isMesh) child.material.color = col; });
-                });
-            };
-
-            document.getElementById('colorSkin').addEventListener('input', e => {
-                const skinGeo = [character.joints.neck, character.joints.head, character.joints.lElbow, character.joints.rElbow, character.joints.lKnee, character.joints.rKnee];
-                applyColor(e.target.value, skinGeo);
-            });
-            document.getElementById('colorShirt').addEventListener('input', e => {
-                const shirtGeo = [character.joints.torso, character.joints.lUpperArm, character.joints.rUpperArm];
-                applyColor(e.target.value, shirtGeo);
-            });
-            document.getElementById('colorPants').addEventListener('input', e => {
-                applyColor(e.target.value, [character.joints.hips, character.joints.lThigh, character.joints.rThigh]);
-            });
-            document.getElementById('colorCape').addEventListener('input', e => {
-                const col = new THREE.Color(e.target.value);
-                physics.particles.forEach(p => p.mesh.material.color = col);
-            });
-        }
-
-        // --- ANIMATION KINEMATICS ---
-        function setAnimation(mode) {
-            animationState.mode = mode;
-            document.getElementById('btn-idle').classList.toggle('active', mode === 'idle');
-            document.getElementById('btn-walk').classList.toggle('active', mode === 'walk');
-            
-            // Reset transforms before switching
-            Object.values(character.joints).forEach(j => {
-                j.rotation.set(0,0,0);
-            });
-            character.joints.hips.position.y = 1.0;
-        }
-
-        function updateFacialFeatures(dt) {
-            // 1. Audio Viseme Map (Mouth Open)
-            if (audio.enabled && audio.analyser) {
-                audio.analyser.getByteFrequencyData(audio.dataArray);
-                let sum = 0;
-                for(let i=0; i<audio.dataArray.length; i++) sum += audio.dataArray[i];
-                const avg = sum / audio.dataArray.length;
-                // Map volume to jaw/mouth scale
-                const targetScale = 1 + (avg / 256) * 15; 
-                character.meshes.mouth.scale.y = THREE.MathUtils.lerp(character.meshes.mouth.scale.y, targetScale, 0.3);
-            }
-
-            // 2. Automated Blinking (Gaussian-like timer)
-            animationState.blinkTimer -= dt;
-            if (animationState.blinkTimer <= 0) {
-                animationState.blinkTimer = 2 + Math.random() * 4; // Blink every 2-6 seconds
-                animationState.isBlinking = true;
-                animationState.blinkPhase = 0;
-            }
-
-            if (animationState.isBlinking) {
-                animationState.blinkPhase += dt * 10; // Speed of blink
-                let s = 1.0;
-                if (animationState.blinkPhase < 1) s = 1 - animationState.blinkPhase;
-                else if (animationState.blinkPhase < 2) s = animationState.blinkPhase - 1;
-                else animationState.isBlinking = false;
+        // --- Web Audio FFT (Visemes) ---
+        async function toggleAudio() {
+            if (audio.active) return;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audio.ctx.createMediaStreamSource(stream);
+                audio.analyser = audio.ctx.createAnalyser();
+                audio.analyser.fftSize = 128; // Fast resolution
+                source.connect(audio.analyser);
+                audio.data = new Uint8Array(audio.analyser.frequencyBinCount);
+                audio.active = true;
                 
-                character.meshes.lEye.scale.y = Math.max(0.1, s);
-                character.meshes.rEye.scale.y = Math.max(0.1, s);
+                const btn = document.getElementById('btn-audio');
+                btn.classList.add('active');
+                btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg> Audio Active`;
+            } catch (err) {
+                alert("Microphone access is required for lip-sync functionality.");
             }
-
-            // 3. Micro-Saccades (Eye movement via Perlin approximation)
-            animationState.saccadeTimer -= dt;
-            if (animationState.saccadeTimer <= 0) {
-                animationState.saccadeTimer = 0.5 + Math.random() * 1.5;
-                // Generate small random target look rotations
-                animationState.targetEyeX = (Math.random() - 0.5) * 0.1;
-                animationState.targetEyeY = (Math.random() - 0.5) * 0.1;
-            }
-
-            const eX = animationState.targetEyeX || 0;
-            const eY = animationState.targetEyeY || 0;
-            character.joints.head.rotation.y = THREE.MathUtils.lerp(character.joints.head.rotation.y, eX, 0.1);
-            character.joints.head.rotation.x = THREE.MathUtils.lerp(character.joints.head.rotation.x, eY, 0.1);
         }
 
+        function updateFace() {
+            // Procedural Blinking
+            if (Math.random() < 0.01) {
+                character.rig.lEye.scale.z = 0.1; character.rig.rEye.scale.z = 0.1;
+            } else {
+                character.rig.lEye.scale.z = THREE.MathUtils.lerp(character.rig.lEye.scale.z, 1, 0.2);
+                character.rig.rEye.scale.z = THREE.MathUtils.lerp(character.rig.rEye.scale.z, 1, 0.2);
+            }
+
+            // Viseme Jaw Drop
+            if (audio.active) {
+                audio.analyser.getByteFrequencyData(audio.data);
+                let vol = 0;
+                for (let i = 0; i < audio.data.length; i++) vol += audio.data[i];
+                vol /= audio.data.length;
+                
+                // Map volume (0-255) to jaw drop translation
+                const drop = (vol / 255) * 0.04;
+                character.rig.jaw.position.y = THREE.MathUtils.lerp(character.rig.jaw.position.y, -0.02 - drop, 0.3);
+            }
+        }
+
+        // --- Continuous Media Recording Pipeline ---
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60).toString().padStart(2, '0');
+            const s = (sec % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function toggleRecording() {
+            const btn = document.getElementById('btn-record');
+            const txt = document.getElementById('record-text');
+            const timerUI = document.getElementById('record-timer');
+
+            if (!recorder.active) {
+                // START RECORDING
+                try {
+                    const stream = renderer.domElement.captureStream(60); // 60 FPS
+                    recorder.instance = new MediaRecorder(stream, {
+                        mimeType: 'video/webm; codecs=vp9',
+                        videoBitsPerSecond: 10000000 // 10 Mbps High Bitrate
+                    });
+
+                    recorder.chunks = [];
+                    recorder.instance.ondataavailable = (e) => { if (e.data.size > 0) recorder.chunks.push(e.data); };
+                    
+                    recorder.instance.onstop = () => {
+                        const blob = new Blob(recorder.chunks, { type: 'video/webm' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `anim_studio_pro_${Date.now()}.webm`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    };
+
+                    recorder.instance.start(1000); // Collect data every second
+                    recorder.active = true;
+                    recorder.startTime = Math.floor(Date.now() / 1000);
+                    
+                    // UI Update
+                    btn.classList.add('recording');
+                    txt.innerText = "STOP RECORDING";
+                    timerUI.classList.add('visible');
+                    timerUI.innerText = "00:00";
+                    
+                    recorder.interval = setInterval(() => {
+                        const elapsed = Math.floor(Date.now() / 1000) - recorder.startTime;
+                        timerUI.innerText = formatTime(elapsed);
+                    }, 1000);
+
+                } catch (err) {
+                    console.error("Recording initialization failed:", err);
+                    alert("Your browser does not support high-bitrate WebM recording.");
+                }
+            } else {
+                // STOP RECORDING
+                recorder.instance.stop();
+                recorder.active = false;
+                clearInterval(recorder.interval);
+                
+                // UI Reset
+                btn.classList.remove('recording');
+                txt.innerText = "START RECORDING";
+                timerUI.classList.remove('visible');
+            }
+        }
+
+        // --- UI & Interactions ---
+        function setMode(mode) {
+            state.mode = mode;
+            ['idle', 'walk', 'run'].forEach(m => document.getElementById(`mode-${m}`).classList.remove('active'));
+            document.getElementById(`mode-${mode}`).classList.add('active');
+        }
+
+        function setupInteractions() {
+            const bindSlider = (id, callback) => {
+                document.getElementById(id).addEventListener('input', e => {
+                    const val = parseFloat(e.target.value);
+                    document.getElementById(id.replace('param', 'val')).innerText = val.toFixed(2);
+                    callback(val);
+                });
+            };
+
+            // Global Scale
+            bindSlider('param-scale', v => character.root.scale.setScalar(v));
+            
+            // Hypertrophy (Muscle Scaling via Capsule radius mapping)
+            bindSlider('param-muscle', v => {
+                const scale = new THREE.Vector3(v, 1, v);
+                character.rig.chest.mesh.scale.copy(scale);
+                character.rig.lArm.upper.mesh.scale.copy(scale);
+                character.rig.rArm.upper.mesh.scale.copy(scale);
+                character.rig.lLeg.upper.mesh.scale.copy(scale);
+                character.rig.rLeg.upper.mesh.scale.copy(scale);
+            });
+
+            // Leg Length (Parametric hierarchy shifting)
+            bindSlider('param-legs', v => {
+                character.parameters.legs = v;
+                character.rig.lLeg.upper.mesh.scale.y = v;
+                character.rig.rLeg.upper.mesh.scale.y = v;
+                character.rig.lLeg.lower.group.position.y = -0.5 * v;
+                character.rig.rLeg.lower.group.position.y = -0.5 * v;
+            });
+
+            // Color Swaps
+            document.getElementById('param-skin').addEventListener('input', e => {
+                character.root.traverse(child => {
+                    if(child.isMesh && child.material.color && child !== character.rig.pelvis.mesh && child !== character.rig.lEye && child !== character.rig.rEye && child.geometry.type !== "SphereGeometry") {
+                        if(child === character.rig.headMesh || child === character.rig.jaw || child.parent === character.rig.lArm.lower.group || child.parent === character.rig.rArm.lower.group) {
+                             child.material.color.set(e.target.value);
+                        } else if (child.geometry.type === "CapsuleGeometry") {
+                            child.material.color.set(e.target.value);
+                        }
+                    }
+                });
+                character.rig.headMesh.material.color.set(e.target.value);
+            });
+
+            document.getElementById('param-cloak').addEventListener('input', e => {
+                physics.mesh.material.color.set(e.target.value);
+            });
+
+            document.getElementById('btn-audio').onclick = toggleAudio;
+
+            // Simple Camera Orbit
+            let isDragging = false, prevX = 0, camAngle = 0;
+            document.addEventListener('mousedown', e => { if(e.clientX > 360 && e.clientX < window.innerWidth - 320) isDragging = true; prevX = e.clientX; });
+            document.addEventListener('mouseup', () => isDragging = false);
+            document.addEventListener('mousemove', e => {
+                if(isDragging) {
+                    camAngle -= (e.clientX - prevX) * 0.01;
+                    camera.position.x = 4.5 * Math.sin(camAngle);
+                    camera.position.z = 4.5 * Math.cos(camAngle);
+                    camera.lookAt(0, 1.1, 0);
+                    prevX = e.clientX;
+                }
+            });
+        }
+
+        // --- Main Animation & Kinematics Loop ---
         function animate() {
             requestAnimationFrame(animate);
             const dt = clock.getDelta();
-            const time = clock.getElapsedTime();
+            state.time += dt;
 
-            updateFacialFeatures(dt);
             updatePhysics(dt);
+            updateFace();
 
-            const j = character.joints;
+            const t = state.time;
+            const r = character.rig;
 
-            if (animationState.mode === 'idle') {
-                // Procedural Breathing
-                const breath = Math.sin(time * 2);
-                j.torso.scale.set(1 + breath*0.02, 1, 1 + breath*0.03);
-                j.torso.rotation.x = breath * 0.02;
-                j.lUpperArm.rotation.z = -0.1 + breath * 0.02;
-                j.rUpperArm.rotation.z = 0.1 - breath * 0.02;
-                j.hips.position.y = 1.0 + breath * 0.01;
-            } 
-            else if (animationState.mode === 'walk') {
-                // Procedural Locomotion (Gait Cycle Math)
-                const speed = 6.0;
-                const phase = (time * speed) % (Math.PI * 2);
+            // Reset base rotations
+            r.chest.group.rotation.set(0,0,0);
+            r.abdomen.group.rotation.set(0,0,0);
+            r.headGroup.rotation.set(0,0,0);
+
+            if (state.mode === 'idle') {
+                const b = Math.sin(t * 1.5);
+                r.chest.group.rotation.x = b * 0.02;
+                r.lArm.root.rotation.z = 0.1;
+                r.rArm.root.rotation.z = -0.1;
+                r.lArm.root.rotation.x = b * 0.05;
+                r.rArm.root.rotation.x = -b * 0.05;
+                r.lLeg.root.rotation.x = 0; r.rLeg.root.rotation.x = 0;
+                r.lLeg.lower.group.rotation.x = 0; r.rLeg.lower.group.rotation.x = 0;
                 
-                // Swing and Stance logic using sine and cos to approximate elliptical paths
-                const legMultiplier = document.getElementById('legLength').value;
-                const heightOffset = (legMultiplier - 1) * 0.9;
+                // Base stance
+                const legLen = character.parameters.legs;
+                r.pelvis.group.position.y = 1.05 + ((legLen - 1) * 0.5);
 
+                // Slight dynamic camera drift for premium feel
+                if (!recorder.active) {
+                    camera.position.x += Math.sin(t * 0.5) * 0.002;
+                    camera.position.y += Math.cos(t * 0.3) * 0.002;
+                    camera.lookAt(0, 1.1, 0);
+                }
+
+            } else {
+                // Procedural Gait Math (Walk/Run)
+                const isRun = state.mode === 'run';
+                const speed = isRun ? 12 : 6;
+                const phase = (t * speed) % (Math.PI * 2);
+                const stride = isRun ? 1.0 : 0.6;
+                const legLen = character.parameters.legs;
+
+                // Elliptical Gait Cycle for Legs
                 // Left Leg
-                j.lThigh.rotation.x = Math.sin(phase) * 0.6;
-                // Knee bends only during the forward swing phase
-                j.lKnee.rotation.x = Math.max(0, -Math.sin(phase - 0.5) * 1.2); 
-
-                // Right Leg (Phase shifted by PI)
-                j.rThigh.rotation.x = Math.sin(phase + Math.PI) * 0.6;
-                j.rKnee.rotation.x = Math.max(0, -Math.sin(phase + Math.PI - 0.5) * 1.2);
-
-                // Arm swing (Opposite to legs)
-                j.lUpperArm.rotation.x = Math.sin(phase + Math.PI) * 0.5;
-                j.lElbow.rotation.x = -0.2 + Math.max(0, -Math.sin(phase + Math.PI) * 0.5);
-
-                j.rUpperArm.rotation.x = Math.sin(phase) * 0.5;
-                j.rElbow.rotation.x = -0.2 + Math.max(0, -Math.sin(phase) * 0.5);
-
-                // Center of mass vertical oscillation (Double support phase drop)
-                j.hips.position.y = 1.0 + heightOffset + Math.abs(Math.cos(phase)) * 0.06;
+                r.lLeg.root.rotation.x = Math.sin(phase) * stride;
+                // Knee bends only on swing phase (max limits to positive bending)
+                r.lLeg.lower.group.rotation.x = Math.max(0, -Math.sin(phase - 0.5) * stride * 1.5);
                 
-                // Slight torso twist
-                j.torso.rotation.y = Math.sin(phase) * 0.1;
-                j.torso.rotation.x = 0.05; // Lean forward
+                // Right Leg (Phase shifted by PI)
+                r.rLeg.root.rotation.x = Math.sin(phase + Math.PI) * stride;
+                r.rLeg.lower.group.rotation.x = Math.max(0, -Math.sin(phase + Math.PI - 0.5) * stride * 1.5);
+
+                // Arms counter-swing
+                r.lArm.root.rotation.x = Math.sin(phase + Math.PI) * stride * 0.8;
+                r.lArm.lower.group.rotation.x = -0.1 + Math.max(0, -Math.sin(phase + Math.PI) * stride);
+                r.lArm.root.rotation.z = 0.15; // keep slightly away from body
+
+                r.rArm.root.rotation.x = Math.sin(phase) * stride * 0.8;
+                r.rArm.lower.group.rotation.x = -0.1 + Math.max(0, -Math.sin(phase) * stride);
+                r.rArm.root.rotation.z = -0.15;
+
+                // Center of Gravity shifting (Double support drop)
+                const baseHeight = 1.05 + ((legLen - 1) * 0.5);
+                const bounce = isRun ? 0.1 : 0.05;
+                r.pelvis.group.position.y = baseHeight + Math.abs(Math.cos(phase)) * bounce;
+                
+                // Torso rotation compensating for legs
+                r.abdomen.group.rotation.y = Math.sin(phase) * 0.15;
+                r.chest.group.rotation.y = Math.sin(phase) * -0.1;
+                r.chest.group.rotation.x = isRun ? 0.2 : 0.05; // Lean forward
+                r.headGroup.rotation.y = Math.sin(phase) * 0.05; // Keep head relatively straight
             }
 
             renderer.render(scene, camera);
         }
 
-        // --- EXPORT PIPELINES ---
-        async function startRecording() {
-            if (recordingState.isRecording) return;
-            
-            const btn = document.getElementById('btn-record');
-            const indicator = document.getElementById('recording-indicator');
-            
-            try {
-                // High bitrate WebM export using MediaStream API
-                const stream = renderer.domElement.captureStream(60); 
-                recordingState.recorder = new MediaRecorder(stream, {
-                    mimeType: 'video/webm; codecs=vp9',
-                    videoBitsPerSecond: 8000000 // 8Mbps cinematic quality
-                });
-
-                recordingState.chunks = [];
-                recordingState.recorder.ondataavailable = e => {
-                    if (e.data.size > 0) recordingState.chunks.push(e.data);
-                };
-                
-                recordingState.recorder.onstop = () => {
-                    const blob = new Blob(recordingState.chunks, { type: 'video/webm' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `anim_studio_export_${Date.now()}.webm`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    
-                    recordingState.isRecording = false;
-                    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg> Record 5s WebM`;
-                    btn.style.opacity = '1';
-                    indicator.style.display = 'none';
-                };
-
-                recordingState.isRecording = true;
-                btn.innerText = "Encoding...";
-                btn.style.opacity = '0.5';
-                indicator.style.display = 'flex';
-                
-                recordingState.recorder.start();
-                
-                // Deterministic 5 second capture
-                setTimeout(() => {
-                    if(recordingState.recorder.state === 'recording') {
-                        recordingState.recorder.stop();
-                    }
-                }, 5000);
-
-            } catch (err) {
-                console.error("Recording error:", err);
-                alert("Video encoding not supported in this browser context.");
-                btn.innerText = "Record 5s WebM";
-                recordingState.isRecording = false;
-            }
-        }
-
-        function downloadJSON() {
-            // Serialization logic matching the architectural document
-            const projectData = {
-                metadata: { version: "1.0", type: "ProceduralAnimState" },
-                customizationState: {
-                    scale: document.getElementById('scale').value,
-                    legLength: document.getElementById('legLength').value,
-                    armLength: document.getElementById('armLength').value,
-                    shoulderWidth: document.getElementById('shoulderWidth').value,
-                    colors: {
-                        skin: document.getElementById('colorSkin').value,
-                        shirt: document.getElementById('colorShirt').value,
-                        pants: document.getElementById('colorPants').value,
-                        cape: document.getElementById('colorCape').value
-                    }
-                },
-                sceneSettings: {
-                    cameraHeight: document.getElementById('camHeight').value,
-                    animationMode: animationState.mode
-                }
-            };
-            
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectData, null, 2));
-            const dl = document.createElement('a');
-            dl.setAttribute("href", dataStr);
-            dl.setAttribute("download", "anim_project.json");
-            dl.click();
-        }
-
-        window.addEventListener('resize', () => {
+        window.onload = init;
+        window.onresize = () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        };
     </script>
 </body>
 </html>
