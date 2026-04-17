@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eniola Adeyemi — Educator & Science Tutor</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --ink-light: #4a4a4a;
+    --ink-muted: #8a8a8a;
+    --cream: #faf8f4;
+    --warm: #f0ebe0;
+    --gold: #b8963e;
+    --gold-light: #d4af6a;
+    --rule: #d8d0c0;
+    --accent: #2c4a3e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    font-size: 11.5px;
+    line-height: 1.6;
+  }
+
+  .page {
+    max-width: 820px;
+    margin: 20px auto;
+    background: #ffffff;
+    min-height: 1120px; /* Standard A4 ratio */
+    position: relative;
+    box-shadow: 0 0 20px rgba(0,0,0,0.05);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* LEFT GOLD SPINE - Persistent on all pages */
+  .page::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 6px;
+    background: linear-gradient(180deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+    z-index: 10;
+  }
+
+  .header {
+    padding: 50px 52px 30px 64px;
+    border-bottom: 1px solid var(--rule);
+    background: linear-gradient(135deg, #ffffff 0%, var(--warm) 100%);
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .name-block h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 42px;
+    font-weight: 300;
+    line-height: 1.1;
+  }
+
+  .name-block h1 span { font-weight: 600; color: var(--accent); display: block; }
+
+  .contact-block { text-align: right; font-size: 10px; color: var(--ink-light); }
+  .contact-block a { color: var(--gold); text-decoration: none; font-weight: 500; }
+
+  .body-grid {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    flex-grow: 1;
+  }
+
+  .main-col { padding: 30px 40px 40px 64px; border-right: 1px solid var(--rule); }
+  .side-col { padding: 30px 25px; background: #fdfcf9; }
+
+  .section-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+
+  .exp-item { margin-bottom: 22px; }
+  .exp-header { display: flex; justify-content: space-between; font-weight: 500; }
+  .exp-role { font-size: 12px; color: var(--ink); }
+  .exp-date { font-size: 10px; color: var(--gold); }
+  .exp-org { color: var(--accent); font-size: 10.5px; margin-bottom: 5px; }
+
+  .bullets { list-style: none; padding-left: 12px; }
+  .bullets li { position: relative; margin-bottom: 4px; font-size: 10.5px; color: var(--ink-light); }
+  .bullets li::before { content: '—'; position: absolute; left: -12px; color: var(--gold-light); }
+
+  .tag { 
+    display: inline-block; 
+    padding: 3px 8px; 
+    background: var(--warm); 
+    border: 1px solid var(--rule); 
+    font-size: 9px; 
+    border-radius: 2px; 
+    margin: 0 4px 4px 0; 
+  }
+  
+  .tag.dark { background: var(--accent); color: white; border: none; }
+
+  .footer { 
+    padding: 15px 64px; 
+    background: var(--warm); 
+    border-top: 1px solid var(--rule); 
+    font-size: 9px; 
+    color: var(--ink-muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  @media print {
+    body { background: none; }
+    .page { margin: 0; box-shadow: none; page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="header">
+    <div class="header-top">
+      <div class="name-block">
+        <h1>Eniola<span>Adeyemi</span></h1>
+        <p style="color:var(--gold); font-style:italic; margin-top:5px;">Certified English & Science Educator</p>
+      </div>
+      <div class="contact-block">
+        <p>🇳🇬 Ibadan, Nigeria</p>
+        <p>📞 +234 XXX XXX XXXX</p>
+        <p>✉️ eniola.adeyemi@email.com</p>
+        <p><a href="#">LinkedIn Profile</a></p>
+      </div>
+    </div>
+  </header>
+
+  <div class="body-grid">
+    <main class="main-col">
+      <section style="margin-bottom:30px;">
+        <div class="section-label">Profile</div>
+        <p style="font-family:'Cormorant Garamond'; font-size:14px; font-style:italic; border-left: 3px solid var(--gold-light); padding-left:15px;">
+          TEFL-certified educator with 6+ years of experience. Specialist in Biology, Chemistry, and English instruction, holding a Second Class Upper from the University of Ibadan.
+        </p>
+      </section>
+
+      <section>
+        <div class="section-label">Teaching Experience</div>
+        
+        <div class="exp-item">
+          <div class="exp-header">
+            <span class="exp-role">Full Class Teacher (Primary 4)</span>
+            <span class="exp-date">Sept 2025 — Present</span>
+          </div>
+          <div class="exp-org">Winner's International College · Oyo State</div>
+          <ul class="bullets">
+            <li>Orchestrate instruction across 13 subjects including English and Basic Science.</li>
+            <li>Achieved measurable performance gains in pupil assessments within 6 months.</li>
+            <li>Adapted curriculum for remote, under-resourced learning environments.</li>
+          </ul>
+        </div>
+
+        <div class="exp-item">
+          <div class="exp-header">
+            <span class="exp-role">Chemistry Teacher (SS1 - SS3)</span>
+            <span class="exp-date">2022 — 2023</span>
+          </div>
+          <div class="exp-org">Royal Crest International Schools · Ibadan</div>
+          <ul class="bullets">
+            <li>Prepared students for WAEC/NECO public examinations with 100% focus on Organic and Biochemistry.</li>
+            <li>Simplified complex chemical reactions for diverse learning levels.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <aside class="side-col">
+      <div class="section-label">Education</div>
+      <div style="margin-bottom:15px;">
+        <p style="font-weight:600; font-size:10.5px;">B.Agric — Animal Science</p>
+        <p style="color:var(--accent); font-size:9.5px;">University of Ibadan</p>
+        <p style="font-size:9px; color:var(--gold);">CGPA 3.42 / 4.00</p>
+      </div>
+
+      <div class="section-label">Languages</div>
+      <p>English (Native/Fluent)</p>
+      <p style="margin-bottom:15px;">Yoruba (Native)</p>
+
+      <div class="section-label">Certifications</div>
+      <div class="tag dark">TEFL Certified (Alison)</div>
+    </aside>
+  </div>
+  <footer class="footer">
+    <span>Eniola Adeyemi — Curriculum Vitae</span>
+    <span>Page 1 of 2</span>
+  </footer>
+</div>
+
+<div class="page">
+  <div class="body-grid">
+    <main class="main-col">
+      <section>
+        <div class="section-label">Additional Experience</div>
+        <div class="exp-item">
+          <div class="exp-header">
+            <span class="exp-role">Full Class Teacher (Primary 4)</span>
+            <span class="exp-date">2020</span>
+          </div>
+          <div class="exp-org">Inioluwa Nursery and Primary School</div>
+          <ul class="bullets">
+            <li>Managed classroom of 30+ pupils with full responsibility for lesson delivery.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-label">Subject Competencies</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+          <div>
+            <p style="font-weight:600; margin-bottom:5px;">Sciences</p>
+            <span class="tag">IGCSE Biology</span>
+            <span class="tag">Chemistry</span>
+            <span class="tag">Nutrition</span>
+          </div>
+          <div>
+            <p style="font-weight:600; margin-bottom:5px;">English</p>
+            <span class="tag">TEFL Methodology</span>
+            <span class="tag">Verbal Reasoning</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="side-col">
+      <div class="section-label">Skills</div>
+      <ul class="bullets" style="list-style:none; padding:0;">
+        <li>Lesson Planning</li>
+        <li>Exam Preparation</li>
+        <li>Curriculum Design</li>
+        <li>Online Tutoring (Zoom/Meet)</li>
+      </ul>
+      
+      <div class="section-label" style="margin-top:20px;">Philosophy</div>
+      <p style="font-size:10px; font-style:italic; color:var(--ink-light);">
+        "My role is not to fill empty vessels but to light fires — meeting each learner where they are."
+      </p>
+    </aside>
+  </div>
+  <footer class="footer">
+    <span>International Passport Holder · Available for Relocation</span>
+    <span>Page 2 of 2</span>
+  </footer>
+</div>
+
+</body>
+</html>
